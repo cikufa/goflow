@@ -16,6 +16,7 @@ parser.add_argument('--episode-seconds', type=float, default=6., help='Oracle pr
 parser.add_argument('--fixture-distance-scale', type=float, default=1., help='Move the wall away as an explicit geometry control')
 parser.add_argument('--case', type=int, choices=range(6), help='Run one of the six fixed cases')
 parser.add_argument('--video', action='store_true')
+parser.add_argument('--closed-gripper', action='store_true', help='Use the INSERT initialization after macro closure')
 args = parser.parse_args()
 if args.episode_seconds <= 0 or args.fixture_distance_scale <= 0:
     parser.error('Duration and fixture distance scale must be positive')
@@ -31,6 +32,9 @@ try:
     from experiments.connector_handoff.environment import ConnectorEnv, ConnectorEnvCfg, GRASP_OFFSET
     from goflow.environments.med_gear.direct_panda_position import INITIAL_CFG, IPose
     cfg = ConnectorEnvCfg()
+    if args.closed_gripper:
+        from experiments.connector_handoff.environment import ConnectorInsertEnvCfg
+        cfg = ConnectorInsertEnvCfg()
     cfg.scene.num_envs = 6 if args.case is None else 1
     cfg.episode_length_s = args.episode_seconds
     cfg.fixture_distance_scale = args.fixture_distance_scale
@@ -96,6 +100,7 @@ try:
                'seed': 0, 'steps': len(rows), 'episode_seconds': args.episode_seconds,
                'fixture_distance_scale': args.fixture_distance_scale,
                'case': args.case, 'video': args.video,
+               'closed_gripper': args.closed_gripper,
                'actor_width': 105, 'critic_width': 109,
                'contexts': contexts.tolist(),
                'returns': arrays['reward'].sum(0).tolist(),

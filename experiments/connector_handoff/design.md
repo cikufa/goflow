@@ -1,5 +1,10 @@
 # Connector diagnostic: implementation contract
 
+Current continuation: [grasp validation and INSERT training](training.md). The
+geometry results below describe the original open-gripper prototype. Closed
+fingers required a longer exposed connector tip; the updated geometry and macro
+measurements are documented in the continuation.
+
 Baseline rollback point: `a4e09aa6b125ea161c76ea98134dab45ae4b07e1`.
 See `docs/gears_baseline.md` for the completed one-seed Gears gate and limits.
 

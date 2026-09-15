@@ -6,6 +6,7 @@ from pathlib import Path
 import hashlib
 
 import torch
+import gymnasium as gym
 from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import AssetBaseCfg, RigidObjectCfg
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_FRONT_RADIUS = .120
 FIXTURE_SIDE_RADIUS = .050
 GRASP_OFFSET = .012
+INSERTION_TIP_EXTENSION = .024
 
 
 def _box(stage, path, center, size, color):
@@ -52,8 +54,11 @@ def geometry_assets():
             UsdPhysics.RigidBodyAPI.Apply(root)
             UsdPhysics.MassAPI.Apply(root).CreateMassAttr(.05)
             PhysxSchema.PhysxRigidBodyAPI.Apply(root).CreateDisableGravityAttr(True)
-            _box(stage, '/Asset/body', (0, 0, 0), (.070, .024, .024), (.12, .14, .16))
-            _box(stage, '/Asset/key', (.015, .014, 0), (.010, .004, .018), (.12, .14, .16))
+            # Local +Z points down: leave an exposed insertion tip below fingers.
+            _box(stage, '/Asset/body', (0, 0, INSERTION_TIP_EXTENSION/2),
+                 (.070, .024, .024+INSERTION_TIP_EXTENSION), (.12, .14, .16))
+            _box(stage, '/Asset/key', (.015, .014, INSERTION_TIP_EXTENSION/2),
+                 (.010, .004, .018+INSERTION_TIP_EXTENSION), (.12, .14, .16))
         else:
             # Opening: +/-35.6 mm in local x, +/-12.6 mm in local y, with key notch.
             gray = (.45, .47, .5)
@@ -91,9 +96,11 @@ class ConnectorEnvCfg(MyPandaEnvCfg):
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(.25, .28, .32))),
             init_state=RigidObjectCfg.InitialStateCfg(pos=(2., 0., .1)))]
         self.peripherals = [p for p in self.peripherals if p.prim_path.endswith('/table')]
+        socket_pos = goal.pos[0].clone()
+        socket_pos[2] -= INSERTION_TIP_EXTENSION
         self.peripherals.append(AssetBaseCfg(
             prim_path='/World/envs/env_.*/socket', spawn=sim_utils.UsdFileCfg(usd_path=str(socket)),
-            init_state=AssetBaseCfg.InitialStateCfg(pos=tuple(goal.pos[0].tolist()),
+            init_state=AssetBaseCfg.InitialStateCfg(pos=tuple(socket_pos.tolist()),
                                                    rot=tuple(goal.quat[0].tolist()))))
         self.viewer.lookat = tuple(goal.pos[0].tolist())
         self.viewer.eye = tuple((goal.pos[0] + torch.tensor([.4, .4, .35], device=goal.pos.device)).tolist())
@@ -144,3 +151,21 @@ class ConnectorEnv(MyPandaEnv):
         self.last_goal_distance = torch.linalg.vector_norm(
             self.last_peg_pose[:, :3] - self.scene.env_origins - goal.pos, dim=1)
         return reward
+
+
+@configclass
+class ConnectorInsertEnvCfg(ConnectorEnvCfg):
+    """INSERT starts with the closed fingers produced by the grasp macro."""
+    def __post_init__(self):
+        super().__post_init__()
+        for name in ('panda_finger_joint1', 'panda_finger_joint2'):
+            self.robot1.init_state.joint_pos[name] = .012
+
+
+gym.register(
+    id='Connector-GOFLOW-v0',
+    entry_point=ConnectorEnv,
+    disable_env_checker=True,
+    kwargs={'env_cfg_entry_point': ConnectorInsertEnvCfg,
+            'rl_games_cfg_entry_point': str(ROOT/'experiments/original_gears/privileged_goflow.yaml')},
+)
