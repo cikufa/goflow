@@ -13,7 +13,8 @@ events=EventAccumulator(str(args.tensorboard),size_guidance={'scalars':0}).Reloa
 losses=events.Scalars('losses/cval_loss')
 resume = args.run / 'resume.json'
 # RL Games restarts the central-value TensorBoard frame counter on restore.
-offset = json.loads(resume.read_text()).get('training_transitions', 0) if resume.exists() else 0
+resume_state = json.loads(resume.read_text()) if resume.exists() else {}
+offset = 0 if resume_state.get('central_counter_restored') else resume_state.get('training_transitions', 0)
 with (args.run/'privileged_critic_losses.csv').open('w') as f:
     writer=csv.DictWriter(f,fieldnames=['training_transition','loss','wall_time_unix'])
     writer.writeheader()

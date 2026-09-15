@@ -39,6 +39,11 @@ class InstrumentedA2CAgent(A2CAgent):
                            'tracked_changes_at_start': subprocess.check_output(['git', 'diff', '--stat', 'HEAD'], text=True)}
         (self.run_dir / 'provenance.json').write_text(json.dumps(self.provenance, indent=2) + '\n')
         super().__init__(*args, **kwargs)
+        effective = {'config': self.config, 'num_actors': self.num_actors,
+                     'horizon_length': self.horizon_length, 'batch_size': self.batch_size,
+                     'minibatch_size': self.minibatch_size,
+                     'privileged_critic_enabled': self.has_central_value}
+        (self.run_dir / 'effective_config.json').write_text(json.dumps(effective, default=str, indent=2) + '\n')
         self.flow_updates = 0
         original_update = self.dr_method.update
         def logged_update(*a, **kw):
@@ -82,6 +87,10 @@ class InstrumentedA2CAgent(A2CAgent):
         state['goflow_distribution'] = self.dr_method.current_dist.flow.state_dict()
         state['goflow_distribution_optimizer'] = self.dr_method.dist_optimizer.state_dict()
         state['instrumentation'] = self.counts()
+        if self.has_central_value:
+            state['central_value_optimizer'] = self.central_value_net.optimizer.state_dict()
+            state['central_value_counters'] = {
+                'frame': self.central_value_net.frame, 'epoch_num': self.central_value_net.epoch_num}
         return state
 
     def set_full_state_weights(self, weights, set_epoch=True):
@@ -96,7 +105,13 @@ class InstrumentedA2CAgent(A2CAgent):
         self.flow_updates = prior.get('completed_flow_updates', 0)
         self.prior_wall_seconds = prior.get('wall_seconds', 0.)
         self.next_save = (self.transitions // self.save_every + 1) * self.save_every
-        (self.run_dir / 'resume.json').write_text(json.dumps(prior, indent=2) + '\n')
+        restored_central = self.has_central_value and 'central_value_optimizer' in weights
+        if restored_central:
+            self.central_value_net.optimizer.load_state_dict(weights['central_value_optimizer'])
+            for key, value in weights['central_value_counters'].items():
+                setattr(self.central_value_net, key, value)
+        (self.run_dir / 'resume.json').write_text(json.dumps(
+            prior | {'central_counter_restored': restored_central}, indent=2) + '\n')
 
     def counts(self):
         return {'transitions': self.transitions, 'training_transitions': self.training_transitions,
@@ -116,6 +131,13 @@ class InstrumentedA2CAgent(A2CAgent):
             self.rows.clear()
             self.rollout_number += 1
         metrics = self.counts() | {'validation': validation, 'epoch': self.epoch_num}
+        metrics['raw_action_mean'] = arrays['actions'].mean(axis=(0, 1)).tolist()
+        metrics['action_upper_clip_fraction'] = (arrays['actions'] >= 1).mean(axis=(0, 1)).tolist()
+        metrics['phase_complete_episodes'] = len(self.game_rewards)
+        if self.game_rewards:
+            metrics['phase_mean_return'] = float(np.mean(self.game_rewards))
+            metrics['phase_success_rate'] = float(np.mean(np.asarray(self.game_rewards) >=
+                self.config['dr_method']['success_threshold']))
         with torch.no_grad():
             lp = self.dr_method.current_dist.log_prob(torch.as_tensor(arrays['xi'][-1], device=self.device))
             metrics['log_p_phi'] = {'min': float(lp.min()), 'max': float(lp.max()), 'mean': float(lp.mean())}
