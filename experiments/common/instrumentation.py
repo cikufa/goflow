@@ -30,6 +30,7 @@ class InstrumentedA2CAgent(A2CAgent):
         self.save_every = int(os.environ.get('GOFLOW_SAVE_EVERY', '25000'))
         self.next_save = self.save_every
         self.started = time.time()
+        self.prior_wall_seconds = 0.0
         self.rollout_number = 0
         self.rows = []
         params = kwargs.get('params', args[1] if len(args) > 1 else {})
@@ -88,11 +89,20 @@ class InstrumentedA2CAgent(A2CAgent):
         if 'goflow_distribution' in weights:
             self.dr_method.current_dist.flow.load_state_dict(weights['goflow_distribution'])
             self.dr_method.dist_optimizer.load_state_dict(weights['goflow_distribution_optimizer'])
+        prior = weights.get('instrumentation', {})
+        self.transitions = prior.get('transitions', 0)
+        self.training_transitions = prior.get('training_transitions', 0)
+        self.validation_transitions = prior.get('validation_transitions', 0)
+        self.flow_updates = prior.get('completed_flow_updates', 0)
+        self.prior_wall_seconds = prior.get('wall_seconds', 0.)
+        self.next_save = (self.transitions // self.save_every + 1) * self.save_every
+        (self.run_dir / 'resume.json').write_text(json.dumps(prior, indent=2) + '\n')
 
     def counts(self):
         return {'transitions': self.transitions, 'training_transitions': self.training_transitions,
                 'validation_transitions': self.validation_transitions,
-                'wall_seconds': time.time() - self.started, 'started_unix': self.started,
+                'wall_seconds': self.prior_wall_seconds + time.time() - self.started,
+                'session_wall_seconds': time.time() - self.started, 'started_unix': self.started,
                 'parallel_envs': self.num_actors, 'gpu': torch.cuda.get_device_name(),
                 'privileged_critic_enabled': self.has_central_value,
                 'source_commit': self.provenance['source_commit'], 'seed': self.provenance['seed'],
