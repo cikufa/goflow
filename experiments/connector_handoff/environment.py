@@ -1,4 +1,4 @@
-"""Native connector scene derived from Gears; geometry diagnostic, not a trained skill.
+"""Native connector scene derived from Gears, shared by probes and INSERT training.
 
 Import after AppLauncher. Original Gears globals and registered task are unchanged.
 """

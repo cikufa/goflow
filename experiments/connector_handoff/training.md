@@ -134,3 +134,107 @@ scripts/project_python.sh -u scripts/run_goflow.py --headless \
 The resume path restores actor/critic/flow and optimizer state and counters.
 Simulator state, random-generator progression and a partially completed update
 phase restart, as explicitly documented for the original Gears continuation.
+
+## Final 10M result: learned region, handoff gate not passed
+
+The same seed finished at 10,027,008 cumulative transitions: 5,111,808 PPO and
+4,915,200 validation, with 24 flow updates. Cumulative agent time is 1112.932 s
+(18.55 minutes), excluding simulator startup and independent evaluation. Final
+checkpoint: `results/custom_connector/insert_seed0_to10m/checkpoints/final.pth`.
+SHA256: `d2e75560f58ac9b4836193e3d437e0817fbcbb7d4eb652680abe40d3be8770e5`.
+
+| Checkpoint | Uniform success | Flow success | Flow mean return |
+|---|---:|---:|---:|
+| ~6M | 0/32 | 6/32 | 42.464 |
+| ~8M | 1/32 | 5/32 | 28.326 |
+| ~10M | 2/100 | 33/100 | 53.271 |
+
+Final flow evaluation: privileged value/discounted-return correlation 0.853,
+success AUC 0.952, RMSE 22.439. Learned log-density/return correlation is 0.412.
+The joint value/density indicator accepts 28 episodes, of which 23 succeed:
+82.1% precision and 69.7% recall. The density threshold is 0.0002145213 in
+released normalized-coordinate units, the fifth percentile of 10,000 flow
+samples selected without reward tuning. Uniform evaluation accepts no episodes.
+These measurements support a useful learned region, not uniform competence or
+a controlled causal claim that flow learning caused the improvement.
+
+The paired nominal grasp/fixture checks use ten shared policy-noise seeds:
+
+| Fixture angle | Grasp | Oracle feasible? | Stochastic policy | Mean-action policy (one case) |
+|---|---|---|---:|---:|
+| -pi/2 | Left | yes | 2/10 | failure, return 23.375 |
+| -pi/2 | Right | no | 0/10 | failure, return 16.338 |
+| +pi/2 | Left | no | 0/10 | failure, return 39.103 |
+| +pi/2 | Right | yes | 2/10 | success, return 67.396 |
+
+Mean-action evaluation is explicitly a diagnostic. The main evaluation and
+trained critic concern the released stochastic policy; substituting mean-action
+execution silently would change the policy whose precondition is being tested.
+Four recorded mean-action videos and success/failure contact sheets are under
+`insert_seed0_to10m/grasp_fixture_deterministic/`.
+
+All four paired cases have initial values below JT=50: 32.72, 11.39, 11.81,
+16.97, respectively. Thus the current joint precondition rejects these nominal
+handoff contexts. Calling this a failure of prospective inspection or BFS would
+confound the planner with inadequate low-level INSERT competence.
+
+### Targeted diagnosis and next gate
+
+At 5M, the centered nominal configuration succeeds in 4/4 stochastic episodes
+(mean return 123.046), while the mean-action policy fails at either +/-12 mm
+grasp offset even with the fixture in its clear central position (returns
+13.569 and 17.298; ~24.7 mm final error). The final policy has improved, but
+the nominal paired cases remain unreliable. The oracle controller reaches the
+same feasible cases within two seconds, so an impossible horizon, missing
+attachment or inherently blocked feasible geometry does not explain those
+failures. The remaining issue is learned grasp-offset correction and coverage;
+the exact optimization/observation cause is not yet isolated.
+
+Next: validate actual macro terminal states against the INSERT reset distribution
+and run a bounded offset-only diagnostic with a clear fixture. In particular,
+the current macro ends after a 40 mm lift, whereas INSERT training resets to
+the original pre-insertion hand pose; a transport/handoff stage has not yet
+been implemented. Do not silently reset away that difference in an end-to-end
+trial. Resolve this starting-state/offset-learning gate before more training or
+online planner scoring. No learning beyond 10M, seed sweep, online INSPECT,
+Bayes3D handoff integration or planner outcome is claimed here.
+
+The grasp-validation rerun now starts both choices from the **same nominal
+visible connector placement**, with +/-3 mm planar jitter. Earlier runs inherited
+the grasp-dependent object placements from the INSERT reset and are preserved
+as narrower checks. The corrected run again succeeds 50/50 for each grasp;
+maximum grasp error 2.525 mm, minimum lift 37.604 mm, maximum hold drift 0.010 mm.
+Outputs: `results/custom_connector/grasp_validation_common_pose/`.
+
+Final commands, in addition to the training commands above:
+
+```bash
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/evaluate_gears_milestones.py \
+  results/custom_connector/insert_seed0_to10m --task connector \
+  --milestones 6000000 8000000 10000000
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --task connector --checkpoint results/custom_connector/insert_seed0_to10m/checkpoints/final.pth \
+  --agent_config experiments/original_gears/privileged_goflow.yaml --sampling nominal \
+  --grasp-fixture-cases --episodes 40 --seed-base 50000 \
+  --output results/custom_connector/insert_seed0_to10m/grasp_fixture_cases
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --task connector --checkpoint results/custom_connector/insert_seed0_to10m/checkpoints/final.pth \
+  --agent_config experiments/original_gears/privileged_goflow.yaml --sampling nominal \
+  --grasp-fixture-cases --deterministic --video --episodes 4 --seed-base 50000 \
+  --output results/custom_connector/insert_seed0_to10m/grasp_fixture_deterministic
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/validate_connector_grasps.py \
+  --output results/custom_connector/grasp_validation_common_pose
+scripts/project_python.sh scripts/analyze_connector_policy.py \
+  results/custom_connector/insert_seed0_to10m --milestone 10000000 \
+  --prior-run results/custom_connector/insert_seed0
+scripts/project_python.sh scripts/check_privileged_critic.py \
+  results/custom_connector/insert_seed0_to10m --task connector
+scripts/project_python.sh scripts/verify_connector_run.py \
+  results/custom_connector/insert_seed0_to10m --budget 10000000
+scripts/project_python.sh -m unittest discover -s tests -v
+```
+
+The five unit tests pass. Each session's artifact audit passes finite weights,
+first/last rollout input separation, transition accounting, and all 328 held-out
+evaluation traces (15,416 steps per session; excludes additional local probes).
+Large outputs/checkpoints/videos remain ignored; code and findings are committed.

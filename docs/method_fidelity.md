@@ -16,7 +16,12 @@ working Gears agent YAML with four custom contexts, a 105-input actor and
 The released two-second duration, reward, translational action scaling,
 PPO and flow objectives are retained. See
 [configuration and commands](../experiments/connector_handoff/training.md).
-No online handoff/planning conclusion follows from these local gates.
+The seed-0 INSERT lineage completed 10,027,008 transitions with 33/100 flow and
+2/100 uniform successes. Its nominal feasible grasp/fixture cases succeed only
+2/10 each. Grasp validation now uses a shared visible-object placement and again
+passes 50/50 per choice. No online handoff/planning conclusion follows from these
+local gates; actual macro-terminal-state alignment and better offset competence
+remain prerequisites.
 
 Status: the one-seed original Gears sanity gate passes after restoring the released 1024-env PPO batch. At 10M, held-out success is 6/100 uniform and 59/100 learned flow; the joint precondition selects 54 flow episodes with 49 successes (90.7% precision). See [baseline and limitations](gears_baseline.md) and [execution record](gears_recovery.md). This is a functional baseline with an explicit privileged-critic configuration, not numerical replication of the paper's full benchmark. The failed 64-env lineage is historical. Native connector geometry and oracle clearance tests now run; grasp macros, INSERT learning and online planning remain pending.
 
