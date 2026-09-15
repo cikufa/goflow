@@ -10,7 +10,7 @@ The existing project environment was reused: Python 3.10.21, Isaac Sim 4.2.0.2, 
 
 Bayes3D rendering/inference uses a separate project-local Conda prefix, Torch 2.2.0+cu118, JAX 0.4.20 and a local 11.8 assembler. Its documented rendering subset omits declared GenJAX/Open3D/timm dependencies; full unchanged-package dependency satisfaction is not claimed. Both environments have YAML and frozen-package exports. No sudo, system driver/toolkit changes, external credentials, substantial deletions or download over 20 GB were used. Isaac Sim license acceptance was explicitly authorized by the user.
 
-## Executed original-task pilots
+## Earlier original-task pilots (before the continuation)
 
 | Pilot | Source | Control transitions | PPO transitions | Uniform validation | Agent runtime |
 |---|---|---:|---:|---:|---:|
@@ -52,3 +52,17 @@ The plotted privileged value at one fixed recorded initial observation over the 
 - Exact commands: `experiments/connector_handoff/README.md`.
 
 All connector-specific success rates, sensing rates, action-sequence distributions and handoff regret are **not available**, since zero connector trials ran. Reporting them as zero would be misleading. The available evidence does not falsify, partially establish or confirm the hypothesized handoff gap. Further original-skill diagnosis or a usable author checkpoint is needed to pass the requested baseline gate.
+
+## Latest single-seed continuation
+
+Seed 0 now has 5,001,216 cumulative transitions: 2,578,432 PPO and 2,422,784 validation.
+The continuation added 3,000,320 transitions in 1,469.205 seconds; lineage runtime
+is 2,328.847 seconds. Final held-out success is 0/100 uniform and 0/100 learned-flow
+episodes, with no material improvement at 3M/4M/5M. Training stopped at 5M; no
+10M extension, seed sweep or custom connector experiment ran.
+
+The critic predicts low returns and the joint value/density precondition rejects
+the sampled states. A successful skill region has not been reproduced. See
+[full continuation result](gears_single_seed_continuation.md) and
+[configuration diagnosis](gears_reproduction_diagnosis.md). No further physical
+seating audit is planned. The totals above describe the earlier pilots only.

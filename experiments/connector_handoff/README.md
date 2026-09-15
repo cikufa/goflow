@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** baseline gate unmet. Three Gears pilots completed, including corrected constraints and a separately identified privileged-critic profile. Final held-out skill checks failed. See [execution report](../../results/original_gears/report.md) and [initial rollback record](../../docs/original_gears_pilot.md). The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
+**Status:** baseline gate unmet. The seed-0 privileged Gears policy was continued to 5,001,216 transitions and remained unsuccessful (0/100 uniform and 0/100 learned-density held-out episodes). See [single-seed continuation](../../docs/gears_single_seed_continuation.md) and [configuration diagnosis](../../docs/gears_reproduction_diagnosis.md). Three earlier Gears pilots are preserved, including corrected constraints and a separately identified privileged-critic profile. Final held-out skill checks failed. See [execution report](../../results/original_gears/report.md) and [initial rollback record](../../docs/original_gears_pilot.md). The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 
@@ -278,7 +278,12 @@ Conclusion: nominal geometric goal reachability and sustained proximity are
 shown without a learned policy. There is no API blocker or evidence of an
 unavoidable nominal attachment/action failure. Constant-down failure is a
 controller/scaling issue in this probe; these runs cannot identify why a learned
-policy failed across randomized contexts. Next inspect seating/contact geometry
-at the successful staged endpoint, then use short scripted randomized-context
-checks before considering more PPO. This diagnostic does not reproduce the
+policy failed across randomized contexts. The user accepted this diagnostic and directed resumption of method reproduction;
+no further seating or randomized scripted-controller audit is planned. This diagnostic does not reproduce the
 original GoFlow policy and does not establish randomized-task solvability.
+
+## Single-seed continuation to 5M
+
+The exact resume, milestone-evaluation, calibration and plotting commands, measured
+results and stop decision are in [the continuation record](../../docs/gears_single_seed_continuation.md).
+No seed/method sweep or 10M extension ran. The connector gate remains unmet.

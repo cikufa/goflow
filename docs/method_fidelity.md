@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: infrastructure, online training, privileged-input checks and synthetic Bayes3D inference checks pass. Original manipulation competence remains unestablished after three pilots, including a 2,000,896-transition privileged-critic run. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists. See `results/original_gears/report.md` for the measured outcome.
+Status: infrastructure, online training, privileged-input checks and synthetic Bayes3D inference checks pass. Original manipulation competence remains unestablished after the seed-0 privileged policy was continued to 5,001,216 transitions (0/100 uniform and 0/100 learned-flow held-out successes). See `gears_single_seed_continuation.md` for the latest outcome; three earlier pilots are preserved. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists. See `results/original_gears/report.md` for the measured outcome.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
@@ -48,3 +48,15 @@ The Gears YAML comments out central_value_config. A2CBase.has_central_value is t
 The environment's loop applying roll/pitch/yaw offsets is commented out. yaw_offset is sampled and logged but does not rotate the object. Default episode length is 2 seconds, whereas appendix A.3 says 4 seconds. These differences remain preserved in the released baseline.
 
 Instrumentation logs online rollouts and actual counts, retains flow/optimizer weights in checkpoint metadata, and stops at a PPO rollout/update boundary under an explicit total-transition budget. It delegates PPO and distribution updates unchanged. The upstream frame counter increments only at reporting-batch boundaries, so it is not used as the actual simulator transition count.
+
+## Single-seed 5M continuation outcome
+
+The privileged seed-0 policy was continued to 5,001,216 cumulative control
+transitions with its released settings and documented 64-env/central-critic
+configuration. Final uniform and flow evaluations both have 0/100 successes.
+The actor saturates its vertical residual; the critic predicts low returns and
+Equation 7 rejects all evaluated states. No 10M extension or custom task ran.
+See [continuation evidence](gears_single_seed_continuation.md) and
+[reproduction/configuration diagnosis](gears_reproduction_diagnosis.md). The
+user accepted the scripted benchmark diagnostic; further seating audits are
+out of scope.
