@@ -37,3 +37,9 @@ Opt-in instrumentation is selected by GOFLOW_RUN_DIR; ordinary upstream CLI beha
 ## Parallel scene size
 
 The first 1,024-environment headless attempt remained at simulation startup for approximately 6.5 minutes with no transitions. It was terminated (SIGTERM did not stop it; SIGKILL did). This is an observed initialization failure, not proof of an out-of-memory error or an Isaac version incompatibility. The 64-environment attempt initialized in seconds and trained normally. It uses the documented CLI batch-size option. Since the released CLI sets PPO minibatch size to twice the environment count, this also changes minibatch size from 2,048 to 128; the network, optimizer, objective and 4,096-episode flow schedule remain unchanged.
+
+## Conflicting inherited grasp constraints
+
+The live USD probe found seven grasp joints in a four-environment scene: env0 has one, and env1–3 have two each with conflicting local offsets. `create_rigid_attachments` used a unique name even when the cloned env0 joint already existed. Remove the unique-name lookup and author the intended joint at the same path, overriding the inherited constraint's attributes. This is one removed executable line; no reward/PPO/flow modification. It changes actual simulation behavior, so the first pilot is preserved at commit `b0a6ae1` and must not be pooled with corrected training. The fix restores one rigid grasp with each environment's sampled transform; it is not a handoff-specific mechanism.
+
+Retest passed: exactly four grasp joints in four environments, each targeting its own hand/gear pair and each with its own sampled local transform. Evidence: `results/original_gears/attachments_after_fix.json`. Command: `GOFLOW_ATTACHMENT_REPORT=attachments_after_fix.json scripts/project_python.sh -u scripts/check_gears_attachments.py`.

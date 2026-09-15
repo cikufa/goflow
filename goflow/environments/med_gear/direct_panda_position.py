@@ -509,7 +509,8 @@ class MyPandaEnv(DirectRLEnv):
 
             env0_path = f"/World/envs/env_{env_id}/{robot_path}"
             fixed_joint_path = env0_path + "/AssemblerFixedJoint"
-            fixed_joint_path = find_unique_string_name(fixed_joint_path, lambda x: not prim_utils.is_prim_path_valid(x))
+            # Clones inherit env_0's joint. Override it at the same path so each
+            # hand/gear pair has exactly one constraint with its own DR offset.
             stage = stage_utils.get_current_stage()
             fixed_joint = UsdPhysics.FixedJoint.Define(stage, fixed_joint_path)
 
