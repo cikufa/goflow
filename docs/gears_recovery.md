@@ -174,3 +174,9 @@ scripts/project_python.sh scripts/analyze_gears_reproduction.py \
 Training plots support `--prior-run` to include both sessions of this lineage;
 the independent probe is excluded. Central-value loss axes use restored critic
 counters, without adding the prior transition offset twice.
+
+Final outcome: 6/100 uniform and 59/100 learned-flow successes at 10M. The
+joint precondition accepts 54 flow episodes, with 49 successes. Full results,
+limitations, checkpoint hashes and videos are in [the baseline record](gears_baseline.md).
+The baseline rollback commit is `a4e09aa`; the custom geometry diagnostic began
+after that commit. No further original-task training or four-second variant ran.

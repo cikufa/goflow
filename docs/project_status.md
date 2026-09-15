@@ -53,7 +53,8 @@ The plotted privileged value at one fixed recorded initial observation over the 
 - Compatibility/instrumentation additions: explicit Lab spaces, runtime environment-count handling, checkpoint-name initialization, one grasp constraint per clone, independent evaluation history, true transition logs, persisted flow/critic weights and diagnostics.
 - Reimplemented: generic paper BFS and joint value/density belief expectation; five meaningful component tests pass. No task-specific online planner demonstration is claimed.
 - Partial Bayes3D integration: actual GPU renderer and a documented RGB-D mixture/SMC/grid adapter. Six synthetic-image tests across three noise scales pass; no Isaac RGB-D perception or online inspection integration is claimed.
-- Not done: original three-gear online planning demonstration, custom connector scene/macros, connector INSERT training, skill/precondition validation, 20 balanced diagnostic trials, counterfactual replays and connector metrics/videos.
+- Custom scene: native keyed connector/socket/fixture geometry and an oracle clearance probe. Both side cases show the intended reversal with the grasp transform; moving the wall away removes failures. A debug video is saved. See [custom design and measured gate](../experiments/connector_handoff/design.md).
+- Not done: original three-gear online planning demonstration, executed connector pickup macros, connector INSERT training, learned skill/precondition validation, 20 balanced planning trials, counterfactual replays and connector planning metrics/videos.
 
 ## Evidence and commands
 

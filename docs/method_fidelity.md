@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: the one-seed original Gears sanity gate passes after restoring the released 1024-env PPO batch. At 10M, held-out success is 6/100 uniform and 59/100 learned flow; the joint precondition selects 54 flow episodes with 49 successes (90.7% precision). See [baseline and limitations](gears_baseline.md) and [execution record](gears_recovery.md). This is a functional baseline with an explicit privileged-critic configuration, not numerical replication of the paper's full benchmark. The failed 64-env lineage is historical. No custom connector task or online robot-planner result exists yet.
+Status: the one-seed original Gears sanity gate passes after restoring the released 1024-env PPO batch. At 10M, held-out success is 6/100 uniform and 59/100 learned flow; the joint precondition selects 54 flow episodes with 49 successes (90.7% precision). See [baseline and limitations](gears_baseline.md) and [execution record](gears_recovery.md). This is a functional baseline with an explicit privileged-critic configuration, not numerical replication of the paper's full benchmark. The failed 64-env lineage is historical. Native connector geometry and oracle clearance tests now run; grasp macros, INSERT learning and online planning remain pending.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
@@ -23,7 +23,7 @@ Artifact classes: A = directly released; B = fully specified reimplementation; C
 | INSPECT (C) | Object-parameterized observation action | Not found | Not implemented | Pending | No special look-before-grasp trigger |
 | Bayes3D integration (C, partial) | RGB-D likelihood, coarse-to-fine SMC MAP, grid posterior | No GoFlow integration found; separate library public | Actual Bayes3D renderer plus explicit SMC/grid adapter in isolated process | Added | Synthetic-image checks pass; uniform-color/SMC/grid assumptions documented; no Isaac RGB-D/online inspection claim |
 | Taskboard assets (A) | Gear board | taskboard/ and models/ USD/STL files | Released geometry | No | Loaded in visual Gears smoke without private submodule |
-| Connector adaptation | Requested diagnostic | Not upstream | Not started | Pending | Must first validate and commit original reproduction |
+| Connector adaptation | Requested diagnostic | Not upstream | Native scene and oracle clearance probe | Added | Original baseline committed first; macro validation/training/planning pending; see experiments/connector_handoff/design.md |
 
 ## Potential fidelity issues to retain visibly
 

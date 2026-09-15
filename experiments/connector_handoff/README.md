@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** the minimal Gears baseline gate passes: 6/100 uniform and 59/100 learned-flow successes at 10M; the joint precondition selects 54 flow episodes with 49 successes. See [baseline and limitations](../../docs/gears_baseline.md) and [exact recovery commands](../../docs/gears_recovery.md). The failed 64-env [continuation](../../docs/gears_single_seed_continuation.md) and earlier pilots are historical. The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
+**Status:** the minimal Gears baseline gate passes: 6/100 uniform and 59/100 learned-flow successes at 10M; the joint precondition selects 54 flow episodes with 49 successes. See [baseline and limitations](../../docs/gears_baseline.md) and [exact recovery commands](../../docs/gears_recovery.md). Native connector geometry and oracle clearance tests now run; see [design, commands and measured gate](design.md). Pickup macros, INSERT training, online planning and balanced handoff trials remain pending. The failed 64-env [continuation](../../docs/gears_single_seed_continuation.md) and earlier pilots are historical.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 
@@ -137,7 +137,12 @@ The failed 1,024-env attempt used the same training command with `--num_envs 102
 
 ## Next execution gate
 
-The constraint correction and privileged-critic reconstruction are verified, but manipulation competence is still missing. The initial released-code run is preserved at `b0a6ae1`; the constraint fix is `19390ef`; the explicit critic profile is `ddc238c`. Further baseline diagnosis or a usable author checkpoint is needed before claiming an original planning reproduction or interpreting the custom diagnostic. Do not infer a handoff-planning failure from these results.
+The original Gears sanity baseline is committed at `a4e09aa`. The custom native
+geometry gate now shows the intended grasp/fixture asymmetry, including a
+wall-away control. The next gate is reliable execution of both pickup macros,
+followed by INSERT learning. Do not infer a handoff-planning result from the
+geometry probe. Initial rollback points remain `b0a6ae1` (released-code pilot),
+`19390ef` (constraint fix) and `ddc238c` (critic profile).
 
 Connector training and balanced handoff evaluation commands do not yet exist because those stages have not been implemented. The available original-task and component-check commands are documented below; no custom results are fabricated.
 
