@@ -87,6 +87,7 @@ try:
         obs, _ = env.reset()
         if args.video:
             # Fill render buffers without advancing physics or policy state.
+            env.render()  # first call creates the render product
             for _ in range(8):
                 env.sim.render()
         xi = env.context.detach().cpu().numpy()[0].copy()

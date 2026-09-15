@@ -8,6 +8,7 @@ from pathlib import Path
 import time
 import contextlib
 import sys
+import subprocess
 
 import numpy as np
 import torch
@@ -31,6 +32,11 @@ class InstrumentedA2CAgent(A2CAgent):
         self.started = time.time()
         self.rollout_number = 0
         self.rows = []
+        params = kwargs.get('params', args[1] if len(args) > 1 else {})
+        self.provenance = {'seed': params.get('seed'), 'command': sys.argv,
+                           'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+                           'tracked_changes_at_start': subprocess.check_output(['git', 'diff', '--stat', 'HEAD'], text=True)}
+        (self.run_dir / 'provenance.json').write_text(json.dumps(self.provenance, indent=2) + '\n')
         super().__init__(*args, **kwargs)
         self.flow_updates = 0
         original_update = self.dr_method.update
@@ -56,6 +62,8 @@ class InstrumentedA2CAgent(A2CAgent):
                'observations': observation.detach().cpu().numpy().copy(),
                'actions': actions.detach().cpu().numpy().copy()}
         row['executed_actions'] = np.clip(row['actions'], -1., 1.)
+        if self.has_central_value:
+            row['critic_observations'] = self.obs['states'].detach().cpu().numpy().copy()
         result = super().env_step(actions)
         _, rewards, dones, _ = result
         row.update(rewards=rewards.detach().cpu().numpy().copy(),
@@ -87,6 +95,7 @@ class InstrumentedA2CAgent(A2CAgent):
                 'wall_seconds': time.time() - self.started, 'started_unix': self.started,
                 'parallel_envs': self.num_actors, 'gpu': torch.cuda.get_device_name(),
                 'privileged_critic_enabled': self.has_central_value,
+                'source_commit': self.provenance['source_commit'], 'seed': self.provenance['seed'],
                 'completed_flow_updates': self.flow_updates}
 
     def train_epoch(self, validation=False):
