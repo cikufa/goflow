@@ -40,6 +40,12 @@ reach the goal (<0.090 mm final root error). The final macro gate's worst grasp
 error is 2.522 mm; minimum lift 37.615 mm; worst hold translation drift 0.010 mm;
 worst quaternion-derived angular drift ~0.089 degrees. All saved arrays are finite.
 
+A further bounded check uses the actual two-second training duration:
+`geometry_closed_tip_2s`. Both central cases and the two feasible side cases
+reach <0.432 mm root error; the blocked counterparts remain ~25 mm away. Thus
+the current geometry is solvable within the released training horizon by the
+explicitly oracle pose controller; it does not establish learned competence.
+
 INSERT uses `Connector-GOFLOW-v0`, the same privileged Gears agent YAML, and a
 new seed-0 actor/critic/flow. Explicit custom changes: keyed connector/socket and
 fixture; four context components (yaw +/-0.12 rad, grasp x +/-40 mm, grasp y
@@ -88,3 +94,43 @@ scripts/project_python.sh scripts/analyze_connector_policy.py results/custom_con
 cycles four fixed grasp/fixture cases to check skill competence at the nominal
 grasp transforms. This is an isolated policy diagnostic, not an executed
 predecessor-to-successor handoff and not a planner experiment.
+
+## First 5M result and bounded continuation
+
+Seed 0 completed 5,013,504 transitions (2,555,904 PPO; 2,457,600 uniform validation)
+in 554.371 agent seconds, with 12 flow updates. Training source: `197e15c`.
+Final checkpoint SHA256:
+`f1199121885254a615816871140b875a6575ddb7498a9f084ad8f17b4ecd369e`.
+
+| Checkpoint | Uniform success | Flow success | Flow mean return |
+|---|---:|---:|---:|
+| ~1M | 0/32 | 2/32 | 23.167 |
+| ~3M | 0/32 | 5/32 | 38.703 |
+| ~5M | 0/100 | 18/100 | 34.598 |
+
+The final training-phase success rate is 17.3%, versus ~5.6% near 1M and ~13.8%
+near 3.3M. This is improving but weak, motivating one continuation toward 10M
+without changing the task, objectives, seed or network. The held-out 3M/5M
+sample sizes differ, so the small success increase is not a significance claim.
+Paired nominal cases at 5M: allowed-left 1/10; blocked-right 0/10;
+blocked-left 0/10; allowed-right 0/10. This fails the useful handoff-skill gate.
+
+Weights are finite, true transition counters sum correctly, and the final
+critic input check passes 105/109 separation and nonzero context sensitivity.
+Complete trajectories/calibration are saved under the run directory. These
+checks do not turn low success into a successful policy/planning result.
+
+Continuation command (new output directory, cumulative budget):
+
+```bash
+GOFLOW_CPU_THREADS=16 GOFLOW_RUN_DIR=results/custom_connector/insert_seed0_to10m \
+GOFLOW_TRANSITION_BUDGET=10000000 GOFLOW_SAVE_EVERY=2000000 \
+scripts/project_python.sh -u scripts/run_goflow.py --headless \
+  --task Connector-GOFLOW-v0 --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --num_envs 1024 --seed 0 --exp_name connector_insert_seed0_to10m \
+  --checkpoint results/custom_connector/insert_seed0/checkpoints/final.pth
+```
+
+The resume path restores actor/critic/flow and optimizer state and counters.
+Simulator state, random-generator progression and a partially completed update
+phase restart, as explicitly documented for the original Gears continuation.

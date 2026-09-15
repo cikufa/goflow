@@ -107,6 +107,20 @@ fig.savefig(out/'precondition_slice.png', dpi=150)
 np.savez_compressed(out/'precondition_slice.npz', x=x, fixture_angle=angle, values=values, log_density=lp,
                     joint=joint, observation=initial_observation)
 report['slice_coverage'] = float(joint.mean())
+paired = args.run/'grasp_fixture_cases'
+if (paired/'episodes.csv').exists():
+    with (paired/'episodes.csv').open() as f:
+        paired_rows = list(csv.DictReader(f))
+    # Do not accidentally associate another milestone's paired test with this report.
+    paired_checkpoint = torch.load(paired_rows[0]['checkpoint'], map_location='cuda:0', weights_only=False)
+    if all(torch.equal(weight, paired_checkpoint['model'][key]) for key, weight in checkpoint['model'].items()):
+        report['paired_fixed_contexts'] = {}
+        for case in range(4):
+            rows = [row for row in paired_rows if int(row['grasp_fixture_case']) == case]
+            report['paired_fixed_contexts'][str(case)] = dict(episodes=len(rows),
+                successes=sum(int(row['success']) for row in rows),
+                mean_return=float(np.mean([float(row['episode_reward']) for row in rows])),
+                mean_goal_distance_m=float(np.mean([float(row['final_goal_distance_m']) for row in rows])))
 report['limit'] = 'Calibration and fixed-state slices do not establish a sequential handoff or a belief-space planning result.'
 metrics = [json.loads(line) for line in (args.run/'training.jsonl').read_text().splitlines()]
 fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
