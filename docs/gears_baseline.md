@@ -149,5 +149,12 @@ scripts/project_python.sh -u scripts/eval_original_goflow.py \
 This visualization retry is independent of the completed 300-episode final
 evaluation and the numerical baseline gate.
 
+The capped retry completed successfully in about 18 seconds including startup.
+It saved all three videos. Their observations, contexts, actions and rewards
+exactly match the corresponding headless trajectories. Seeds 40000/40001/40002
+have returns 15.06/95.42/123.18 (one failure, two successes). A contact sheet from
+the second episode is `visualization/episode_001_sheet.png`; the videos are
+`visualization/videos/episode_000.mp4` through `episode_002.mp4`.
+
 The original-task baseline is committed before any custom experiment changes.
 No online belief-space planning or connector result is implied by this gate.
