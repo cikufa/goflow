@@ -35,6 +35,10 @@ The new tip geometry again passes 50/50 trials for each grasp, saved in
 central both reach <0.014 mm; angle -pi/2 allows GraspLeft and blocks GraspRight
 at 22.76 mm; angle +pi/2 blocks GraspLeft at 23.26 mm and allows GraspRight.
 This side mapping supersedes the original open-finger prototype mapping.
+Moving only the wall three times farther away lets all six closed-gripper cases
+reach the goal (<0.090 mm final root error). The final macro gate's worst grasp
+error is 2.522 mm; minimum lift 37.615 mm; worst hold translation drift 0.010 mm;
+worst quaternion-derived angular drift ~0.089 degrees. All saved arrays are finite.
 
 INSERT uses `Connector-GOFLOW-v0`, the same privileged Gears agent YAML, and a
 new seed-0 actor/critic/flow. Explicit custom changes: keyed connector/socket and
@@ -65,3 +69,22 @@ The five existing component tests pass. An initial test launch failed inside
 Python's import machinery while loading NumPy (`from_bytes` AttributeError);
 an unchanged retry passed. This resembles earlier intermittent runtime failures
 but its root cause is not established. No packages or system settings changed.
+
+The first saved INSERT rollout verifies (32,1024,105) actor and (32,1024,109)
+critic tensors: the critic prefix equals actor input, and its final four features
+equal the sampled context. Every array is finite. Effective training rollout is
+32768 transitions with minibatch 2048 and an enabled privileged critic.
+
+Checkpoint evaluation uses the same stochastic actor and manually cleared
+history as the working original-task evaluator:
+
+```bash
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/evaluate_gears_milestones.py \
+  results/custom_connector/insert_seed0 --task connector --milestones 1000000 3000000 5000000
+scripts/project_python.sh scripts/analyze_connector_policy.py results/custom_connector/insert_seed0
+```
+
+`--grasp-fixture-cases --task connector --sampling nominal` in the evaluator
+cycles four fixed grasp/fixture cases to check skill competence at the nominal
+grasp transforms. This is an isolated policy diagnostic, not an executed
+predecessor-to-successor handoff and not a planner experiment.

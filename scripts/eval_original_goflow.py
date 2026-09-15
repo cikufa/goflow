@@ -15,6 +15,8 @@ from experiments.common.runtime import kit_arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint', required=True, type=Path)
 parser.add_argument('--task', choices=('gears', 'connector'), default='gears')
+parser.add_argument('--grasp-fixture-cases', action='store_true',
+                    help='Connector-only paired fixed grasp/fixture contexts; diagnostic, not executed handoffs')
 parser.add_argument('--agent_config', type=Path, default=ROOT/'goflow/environments/med_gear/agents/GOFLOW.yaml')
 parser.add_argument('--episodes', type=int, default=10)
 parser.add_argument('--seed-base', type=int, default=10000)
@@ -33,6 +35,8 @@ if args.episodes < 1:
     parser.error('--episodes must be positive')
 if args.sampling_flow_checkpoint and args.sampling != 'flow':
     parser.error('--sampling-flow-checkpoint requires --sampling flow')
+if args.grasp_fixture_cases and (args.task != 'connector' or args.sampling != 'nominal'):
+    parser.error('--grasp-fixture-cases requires --task connector --sampling nominal')
 args.output.mkdir(parents=True, exist_ok=True)
 sys.argv = sys.argv[:1]
 local_kit_arguments = kit_arguments()
@@ -105,6 +109,15 @@ try:
     for episode in range(args.episodes):
         seed = args.seed_base + episode
         env.seed(seed)
+        if args.grasp_fixture_cases:
+            from experiments.connector_handoff.environment import GRASP_OFFSET
+            case = episode % 4
+            fixed_context = torch.tensor([[0., (-1 if case % 2 == 0 else 1)*GRASP_OFFSET,
+                                           0., (-1 if case < 2 else 1)*torch.pi/2]], device=env.device)
+            class FixedContext:
+                def rsample(self, shape):
+                    return fixed_context.expand(shape[0], -1).clone()
+            env.set_sampling_dist(FixedContext())
         if not args.released_history_reset:
             # Training resets all environments synchronously, clearing history.
             # Upstream's one-env reset erroneously deletes only deque entry zero.
@@ -161,7 +174,8 @@ try:
                'steps': len(rewards), 'duration_s': len(rewards) * env.step_dt,
                'wall_seconds': time.time() - start, 'log_p_phi': log_p,
                'checkpoint': str(args.checkpoint.resolve()), 'deterministic': args.deterministic,
-               'sampling': args.sampling, 'control': args.control,
+               'sampling': args.sampling, 'grasp_fixture_case': episode % 4 if args.grasp_fixture_cases else None,
+               'control': args.control,
                'sampling_flow_checkpoint': str((args.sampling_flow_checkpoint or args.checkpoint).resolve())
                    if args.sampling == 'flow' else None}
         rows.append(row)
@@ -175,6 +189,7 @@ try:
         writer_csv.writeheader()
         writer_csv.writerows(rows)
     summary = {'task': args.task, 'episodes': len(rows), 'success_rate': float(np.mean([r['success'] for r in rows])),
+               'grasp_fixture_cases': args.grasp_fixture_cases,
                'mean_episode_reward': float(np.mean([r['episode_reward'] for r in rows])),
                'mean_final_goal_distance_m': float(np.mean([r['final_goal_distance_m'] for r in rows])),
                'success_definition': f'upstream return >= {threshold}; not a physical seating certificate',

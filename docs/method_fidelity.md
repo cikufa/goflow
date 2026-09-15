@@ -1,5 +1,23 @@
 # Method fidelity: initial audit
 
+## Connector continuation
+
+The original-request grasp skills are visible-pose IK macros, not new RL grasp
+policies. The original gravity-disabled object/fixed-constraint approximation is
+explicitly retained. Both macros pass 50/50 local trials after sufficient IK
+settling, including the final extended-tip geometry. Closing fingers exposed a
+socket-rim collision in the first custom geometry; the connector tip and socket
+were extended/lowered by 24 mm to clear the fingers. This change is confined to
+the custom task. The physical wall control removes the asymmetric failures.
+
+INSERT is registered separately as `Connector-GOFLOW-v0`. It uses the exact
+working Gears agent YAML with four custom contexts, a 105-input actor and
+109-input privileged critic. Yaw is physically applied in this custom task.
+The released two-second duration, reward, translational action scaling,
+PPO and flow objectives are retained. See
+[configuration and commands](../experiments/connector_handoff/training.md).
+No online handoff/planning conclusion follows from these local gates.
+
 Status: the one-seed original Gears sanity gate passes after restoring the released 1024-env PPO batch. At 10M, held-out success is 6/100 uniform and 59/100 learned flow; the joint precondition selects 54 flow episodes with 49 successes (90.7% precision). See [baseline and limitations](gears_baseline.md) and [execution record](gears_recovery.md). This is a functional baseline with an explicit privileged-critic configuration, not numerical replication of the paper's full benchmark. The failed 64-env lineage is historical. Native connector geometry and oracle clearance tests now run; grasp macros, INSERT learning and online planning remain pending.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).

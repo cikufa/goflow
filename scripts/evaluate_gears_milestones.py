@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('run', type=Path)
 parser.add_argument('--milestones', type=int, nargs='+', default=[3000000, 4000000, 5000000])
+parser.add_argument('--task', choices=('gears', 'connector'), default='gears')
 args = parser.parse_args()
 run = args.run.resolve()
 results = run / 'evaluations'
@@ -30,6 +31,7 @@ for milestone in args.milestones:
         output = results / f'{milestone}_{sampling}'
         output.mkdir(exist_ok=True)
         command = [str(ROOT / 'scripts/project_python.sh'), '-u', 'scripts/eval_original_goflow.py',
+                   '--task', args.task,
                    '--checkpoint', str(checkpoint), '--agent_config',
                    'experiments/original_gears/privileged_goflow.yaml', '--episodes',
                    '100' if milestone == args.milestones[-1] else '32',

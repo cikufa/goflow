@@ -293,3 +293,9 @@ The exact resume, milestone-evaluation, calibration and plotting commands, measu
 results and stop decision are in [the continuation record](../../docs/gears_single_seed_continuation.md).
 That lineage stopped at 5M. The later 1024-env recovery is recorded separately
 in [the working baseline](../../docs/gears_baseline.md).
+# Current connector continuation
+
+See [grasp validation and INSERT training](training.md) for the native closed-gripper
+task, local grasp results, geometry correction and seed-0 training commands.
+The original Gears sanity baseline is committed before custom changes. Historical
+setup and audit notes below remain for reproducibility.
