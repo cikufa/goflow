@@ -210,3 +210,75 @@ scripts/project_python.sh -m unittest discover -s tests -v
 ```
 
 Synthetic pose-inference evidence is also preserved under `results/infrastructure/`. These tests do not constitute an online original planning/inspection reproduction. Generic BFS and Equation 7 are in `experiments/common/belief_space.py`; task-specific effects, belief equality/threshold calibration and camera integration remain outstanding.
+
+## Deterministic Gears solvability diagnostic
+
+Run from the clean reproduction clone (no checkpoint or training needed):
+
+```bash
+mkdir -p results/original_gears/scripted_diagnostic
+scripts/project_python.sh -u scripts/diagnose_gears_scripted.py > results/original_gears/scripted_diagnostic/run.log 2>&1
+scripts/project_python.sh -m unittest discover -s tests -v > results/original_gears/scripted_diagnostic/tests.log 2>&1
+```
+
+The probe runs one nominal episode for each of three controllers, seed 10000,
+with one environment and an assertion of exactly one hand/gear grasp joint.
+Released reward, context bounds, episode configuration, fixed orientation and
+5 cm residual scaling remain unchanged. The existing evaluator's explicit
+history clearing avoids stale history between independent one-env resets.
+Initial gear poses differ by at most 1.17e-9 in position/quaternion components.
+The released timeout sets both terminated and truncated at step 47.
+
+Zero action is a zero **residual**, retaining the default guidance. Constant
+`z=-1` adds another 5 cm downward IK target displacement. The staged probe uses
+10 cm downward target increments until height error is below 1 cm, then ten
+times the remaining positive height error, capped at 10 cm. It compensates the
+default vertical guidance with its residual, clips to [-1,1], and retains zero
+lateral residuals and the released fixed orientation. Positive residual z in
+the fine stage brakes the default descent. Default lateral guidance remains.
+The existing `get_scripted_actions` helper cycles all six signed translation
+directions; it is not an insertion controller.
+
+Measured results (2026-09-15; all 47 steps, ending at the released time limit):
+
+| Controller | Return | Final distance | Minimum distance | Within 1 mm |
+|---|---:|---:|---:|---|
+| Zero residual | 33.3901 | 2.088 mm | 2.088 mm | Never |
+| Constant down | 30.1668 | 43.121 mm | 0.448 mm | One step; not at end |
+| Staged | 223.2169 | 0.301 mm | 0.289 mm | Final 18 steps |
+
+Distances above are Euclidean gear-root distances to the released goal. The
+NPZ also records the exact SE(3)-based reward distance: it need not equal the
+Euclidean metric when rotation drifts. Verified recorded rewards against the
+released clipped reciprocal formula. All five existing unit tests pass.
+
+Trajectories are `results/original_gears/scripted_diagnostic/{zero,down,staged}.npz`;
+`summary.json` records results, attachment targets/offsets and measurement
+semantics. Every step contains raw pre-action observation, commanded and clipped
+residual actions, default action, resulting IK translation/target, pre/post gear
+and end-effector poses (local environment frame; quaternion wxyz), reward,
+both distances, goal error, proximity indicator, stage and both done flags.
+Post-step snapshots are captured inside `_get_rewards` before automatic reset,
+including the terminal step. No contact sensor is configured; the existing
+`get_ee_force` joint-force projection is not treated as a contact detector.
+There is no native insertion flag: the 1 mm diagnostic threshold measures goal
+proximity, **not contact-confirmed seating**. Return >=50 likewise does not
+certify seating.
+
+The initial slower staged probe (2 cm coarse / 4 mm fine increments) reached
+only 30.692 mm distance within the time limit. Its traces and summary remain in
+`first_pass/`; the final controller was adjusted once, with no reward or physics
+changes. Both passes' zero/down results match. Final staged hand-to-gear length
+stays within 0.077 mm of the nominal 115 mm; constant-down ranges from 112.828
+to 126.446 mm and finishes with 42.333 mm lateral x error. Aggressive continued
+commands produce deflection/constraint strain; these traces alone do not isolate
+which contacts cause it.
+
+Conclusion: nominal geometric goal reachability and sustained proximity are
+shown without a learned policy. There is no API blocker or evidence of an
+unavoidable nominal attachment/action failure. Constant-down failure is a
+controller/scaling issue in this probe; these runs cannot identify why a learned
+policy failed across randomized contexts. Next inspect seating/contact geometry
+at the successful staged endpoint, then use short scripted randomized-context
+checks before considering more PPO. This diagnostic does not reproduce the
+original GoFlow policy and does not establish randomized-task solvability.
