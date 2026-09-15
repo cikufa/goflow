@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** environment preparation is complete. Isaac Lab GPU physics and original GoFlow flow-class compatibility checks pass. Original Gears episodes, baseline training, connector implementation, and scientific evaluation have not run.
+**Status:** environment preparation and original Gears pilot execution are complete. The pilot failed its competence gate, and a conflicting cloned-grasp-joint defect was confirmed. See [pilot record](../../docs/original_gears_pilot.md). Connector implementation and scientific handoff evaluation have not begun.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 
@@ -104,8 +104,39 @@ scripts/project_python.sh -m pip freeze --all > requirements_frozen.txt
 
 The exports record the installed state, including editable Lab paths. Some Conda packages report build-time file URLs in pip freeze; use the Conda versions and installation commands above to recreate those packages. Nothing was installed with system pip.
 
+## Original Gears commands executed in the clean clone
+
+```bash
+GOFLOW_RUN_DIR=results/original_gears/smoke GOFLOW_TRANSITION_BUDGET=1024 \
+  scripts/project_python.sh -u scripts/run_goflow.py --headless \
+  --task Gears-GOFLOW-v0 --num_envs 4 --video --enable_cameras \
+  --video_length 200 --video_interval 100000 --exp_name smoke
+
+GOFLOW_RUN_DIR=results/original_gears/released_training_64 \
+GOFLOW_TRANSITION_BUDGET=1000000 GOFLOW_SAVE_EVERY=100000 \
+  scripts/project_python.sh -u scripts/run_goflow.py --headless \
+  --task Gears-GOFLOW-v0 --num_envs 64 --seed 0 --exp_name released_baseline_64
+
+scripts/project_python.sh scripts/summarize_training_rollouts.py \
+  results/original_gears/released_training_64
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/released_training_64/checkpoints/final.pth \
+  --episodes 10 --output results/original_gears
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/released_training_64/checkpoints/final.pth \
+  --episodes 3 --sampling nominal --video --output results/original_gears/nominal_visual
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/released_training_64/checkpoints/final.pth \
+  --episodes 1 --sampling nominal --control down --video \
+  --output results/original_gears/diagnostic_down
+scripts/project_python.sh -u scripts/check_gears_attachments.py
+scripts/project_python.sh -m unittest discover -s tests -v
+```
+
+The failed 1,024-env attempt used the same training command with `--num_envs 1024`, output `results/original_gears/released_training`, and experiment name `released_baseline`. It produced zero transitions.
+
 ## Next execution gate
 
-The clean clone and development branch are established; GoFlow is installed in the existing environment. Current GitHub releases/tree contain no trained checkpoints; complete the artifact search, then retrain the original policy if necessary as authorized. Validate and commit the original reproduction before connector work.
+Correct and verify the conflicting cloned grasp constraints, retrain the original policy, and establish skill competence before connector work. The initial released-code run is preserved as a rollback point. Enabling the paper's privileged critic will also require an explicitly documented configuration change; it is disabled in the released default.
 
 Commands for Gears evaluation, connector training, 20-trial evaluation, video generation and reporting will be added when those stages are implemented and validated. No placeholder results or scientific conclusion are claimed.

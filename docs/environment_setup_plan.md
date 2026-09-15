@@ -1,13 +1,13 @@
 # GoFlow setup audit
 
-Status: isolated simulator environment installed and infrastructure validated. Original GoFlow reproduction has not run; resolution of pre-existing source-file deletions is pending.
+Status: isolated simulator environment installed and infrastructure validated. A fresh clean clone is active and original Gears smoke passed. Parent checkout deletions are preserved.
 
 ## Provenance
 
 - Official upstream: https://github.com/aidan-curtis/goflow
 - Branch: main; commit: `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
 - GitHub API reports the same commit, no releases, and approximately 254 MB of tracked file contents.
-- Existing local Git history already matches upstream. On arrival nearly all tracked files were deleted from the working tree; `.gitignore` remained. Restoration is pending the user's answer. Do not reset or discard these deletions silently.
+- Parent Git history matches upstream, with pre-existing working-tree deletions. User explicitly required preserving them. Fresh clone: `/home/shekoufeh/goflow/reproduction`, branch `goflow-handoff-experiment`; official remote named `upstream`. Provenance was recorded before edits in `docs/upstream.json`.
 
 ## Machine observed 2026-09-14
 
@@ -30,7 +30,7 @@ Source: https://github.com/isaac-sim/IsaacLab/blob/v1.4.1/docs/source/setup/inst
 
 ## Installation boundaries and sequence
 
-1. Resolve existing deletions, retain official remote, create `goflow-handoff-experiment`.
+1. Preserve existing deletions and use the new clean clone with official remote and `goflow-handoff-experiment` branch (complete).
 2. Complete source audit and commit baseline preparation.
 3. Create a new prefix environment at `.conda/envs/goflow-repro`. Redirect Conda package cache, pip cache, temporary files and simulator cache/config/log locations into this project. Check Conda environment registration behavior before creation, since it can write outside the prefix.
 4. Resolve pinned package metadata and total download sizes before downloads. Install inside the prefix only. Export actual `environment.yml` and `requirements_frozen.txt` after installation; do not fabricate a frozen environment now.
@@ -42,7 +42,7 @@ Source: https://github.com/isaac-sim/IsaacLab/blob/v1.4.1/docs/source/setup/inst
 - No sudo or system driver/toolkit changes currently needed.
 - Isaac Sim prompts for NVIDIA Omniverse license acceptance. The user explicitly accepted and authorized the installation during this session.
 - Public GitHub and pip sources need no credentials. Removed historical `apa_workcells` submodule used private Autodesk Git; do not attempt access without evidence it is needed and available authorization.
-- Isaac Sim extensions and assets can consume many GB. Exact resolved download size remains unmeasured. No download over 20 GB is authorized. No full asset-pack download is planned.
+- Pinned Isaac Sim wheels totaled 6.013 GB plus 63.4 MB Kit, as audited below. No download over 20 GB is authorized. No full asset-pack download is planned.
 - Bayes3D README proposes Python 3.9, Torch 2.2.0 and JAX 0.4.20 with local CUDA 11 support. This differs from the simulator stack; investigate an isolated perception process before considering a fallback. A README mismatch alone is not proof Bayes3D cannot run.
 
 Bayes3D source: https://github.com/probcomp/bayes3d

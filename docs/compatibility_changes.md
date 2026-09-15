@@ -1,6 +1,6 @@
 # Compatibility changes
 
-No upstream source patches have been performed. The project-local Conda environment, pinned CUDA-enabled PyTorch, Isaac Sim 4.2.0.2 and Isaac Lab v1.4.1 are installed. Final infrastructure checks pass; original Gears execution is pending.
+The project-local Conda environment, pinned CUDA-enabled PyTorch, Isaac Sim 4.2.0.2 and Isaac Lab v1.4.1 are installed. Infrastructure and Gears visual smoke checks pass. Minimal source patches and their effects are recorded below; released-code training is underway.
 
 The selected stack and unresolved versions are in `environment_setup_plan.md`. Exact author versions are not specified by upstream. Each future patch must record its triggering failure, minimal diff, validation and potential effect on scientific conclusions.
 
@@ -24,7 +24,7 @@ The host shell exposes ROS Python paths and Python user-site packages. `scripts/
 
 ## Candidate dependency pins
 
-`constraints.txt` holds Lab-prescribed Torch/RL Games pins and conservative historical choices for formerly unpinned libraries. Zuko 1.3.1 is a compatibility assumption, not a recovered author pin. The original upstream flow classes passed CUDA sampling, log-density and gradient checks. Gears runtime validation is still pending.
+`constraints.txt` holds Lab-prescribed Torch/RL Games pins and conservative historical choices for formerly unpinned libraries. Zuko 1.3.1 is a compatibility assumption, not a recovered author pin. The original upstream flow classes passed CUDA sampling, log-density and gradient checks. Gears visual smoke passed.
 
 ## Clean-clone Gears startup
 
@@ -33,3 +33,7 @@ The first released CLI attempt failed because goflow/logs did not exist; scripts
 A one-iteration Gears run reached PPO but crashed at checkpoint naming: mean_rewards was unbound before the first reporting batch. Initialize that display/checkpoint-name variable to NaN; no optimizer data or reward changes. The 4-env visual smoke subsequently completed 1,024 actual transitions in 12.91 seconds of agent runtime, saved a checkpoint and a 202-frame video, and exited 0.
 
 Opt-in instrumentation is selected by GOFLOW_RUN_DIR; ordinary upstream CLI behavior is otherwise unchanged. It delegates training, records transitions/rollouts/losses, persists the flow, and applies GOFLOW_TRANSITION_BUDGET at a horizon boundary. Logging density checks use existing sampled xi and consume no extra random samples.
+
+## Parallel scene size
+
+The first 1,024-environment headless attempt remained at simulation startup for approximately 6.5 minutes with no transitions. It was terminated (SIGTERM did not stop it; SIGKILL did). This is an observed initialization failure, not proof of an out-of-memory error or an Isaac version incompatibility. The 64-environment attempt initialized in seconds and trained normally. It uses the documented CLI batch-size option. Since the released CLI sets PPO minibatch size to twice the environment count, this also changes minibatch size from 2,048 to 128; the network, optimizer, objective and 4,096-episode flow schedule remain unchanged.

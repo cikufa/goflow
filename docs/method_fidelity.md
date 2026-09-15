@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: source inspection only. No reproduction, trained policy, custom task, or experimental results exist yet.
+Status: infrastructure and 1,024-transition visual Gears smoke passed. The initial 1,001,472-transition released-code pilot scored 0/10 on held-out uniform evaluation. A conflicting cloned-joint defect was confirmed; see original_gears_pilot.md. No custom task or online planner results exist.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
@@ -9,20 +9,20 @@ Artifact classes: A = directly released; B = fully specified reimplementation; C
 
 | Component | Paper | Official code | What we use | Modified? | Reason |
 |---|---|---|---|---|---|
-| Simulator/robot (A) | IsaacLab, Franka gear insertion | MyPandaEnv in med_gear/direct_panda_position.py; local assets | Original environment first | No | Runtime validation pending |
+| Simulator/robot (A) | IsaacLab, Franka gear insertion | MyPandaEnv in med_gear/direct_panda_position.py; local assets | Original environment first | Compatibility only | Space aliases and runtime batch-size fix; visual smoke passed |
 | PPO (A) | Actor-critic PPO | my_a2c_common.py, my_a2c_continuous.py and RL Games | Released implementation | No | Preserve training behavior |
 | Actor observations (A) | Ten poses and finite-difference velocities in Section 5.1 | Policy observation excludes context; history implementation present | Released observations | No | Do not feed hidden geometry to actor |
-| Privileged critic (A) | V(s, xi) | Critic observation concatenates policy observation and context | Released critic | No | Inspect full network path before execution |
+| Privileged critic (A code, disabled config) | V(s, xi) | Environment exposes context but selected YAML disables central value; shared value sees actor observation only | Preserve disabled configuration in released baseline | No | Paper-level privileged critic reconstruction must be explicit |
 | Flow (A) | Neural spline flow, three transforms, 64 features, eight bins | NormFlowDist: MAF with MonotonicRQSTransform, inverse transform, (64,64), three transforms, eight bins | Exact released construction | No | Preserve direction and normalization conventions |
 | Flow hyperparameters (A) | K=100; alpha/beta searched | Gears YAML: alpha=0.5, beta=1.0, num_training_iters=100 | Gears values | No | No manual retuning |
 | Domain (A) | x,y in +/-0.05 m; yaw in +/-0.393 rad | x,y +/-0.02 m; yaw +/-pi | Released bounds for baseline | No | Confirmed paper/code discrepancy; runtime behavior pending |
-| Checkpoint (D) | Trained Gears policies evaluated | No checkpoints in tree or GitHub releases; models/ contains geometry | Search remaining links, then retrain original if unavailable | Pending | No claim of released-checkpoint reproduction |
-| Belief precondition (B/C) | Equation 7 combines value and density tests in belief expectation | No planner implementation found | Not implemented yet | Pending | Numerical thresholds/representation require explicit audit |
-| BFS (B) | Algorithm 2 uses FIFO frontier, sampled effects, visited states | Not found in released tree | Literal algorithm only after baseline | Pending | No alternative search or handoff objective |
+| Checkpoint (D released artifact) | Trained Gears policies evaluated | No checkpoints in tree or GitHub releases; models/ contains geometry | Retraining original released configuration | Logging wrapper | No claim of released-checkpoint reproduction; persist flow with PPO weights |
+| Belief precondition (B/C) | Equation 7 combines value and density tests in belief expectation | No planner implementation found | Weighted joint-indicator expectation in common/belief_space.py; unit-tested only | Added | Numerical thresholds/representation still need task-specific assumptions |
+| BFS (B) | Algorithm 2 uses FIFO frontier, sampled effects, visited states | Not found in released tree | Literal generic algorithm in common/belief_space.py; unit-tested only | Added | No alternative search or handoff objective; no online planning claim |
 | Belief/effects (C) | Factored object-pose beliefs and abstract skill effects | Not found | Not implemented | Pending | Need documented representation, equality, effects and sampling assumptions |
 | INSPECT (C) | Object-parameterized observation action | Not found | Not implemented | Pending | No special look-before-grasp trigger |
 | Bayes3D integration (C/D) | RGB-D likelihood, coarse-to-fine SMC MAP, grid posterior | No integration found; Bayes3D separately public | Feasibility investigation pending | No | Cannot label an observation model fallback Bayes3D |
-| Taskboard assets (A) | Gear board | taskboard/ and models/ USD/STL files | Released geometry | No | USD dependency audit pending |
+| Taskboard assets (A) | Gear board | taskboard/ and models/ USD/STL files | Released geometry | No | Loaded in visual Gears smoke without private submodule |
 | Connector adaptation | Requested diagnostic | Not upstream | Not started | Pending | Must first validate and commit original reproduction |
 
 ## Potential fidelity issues to retain visibly

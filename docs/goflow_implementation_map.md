@@ -1,6 +1,6 @@
 # Released implementation map
 
-Inspected from Git objects at `a8c6af5` because the initial working tree has pre-existing deletions. Runtime validation is pending.
+Initial inspection used Git objects at `a8c6af5`; all execution now uses the fresh `reproduction` clone. The parent checkout's deletions remain preserved. Visual smoke completed; baseline training is underway.
 
 | Item | Source and behavior |
 |---|---|
@@ -8,7 +8,7 @@ Inspected from Git objects at `a8c6af5` because the initial working tree has pre
 | 2. Gears | med_gear/direct_panda_position.py: MyPandaEnvCfg and MyPandaEnv, subclassing IsaacLab DirectRLEnv |
 | 3. PPO | rl_components/my_a2c_continuous.py A2CAgent; my_a2c_common.py; RL Games Runner in train_rl.py |
 | 4. Actor inputs | _get_observations: current end-effector pose, finite-difference velocity, pose history; optional force sensing by task config |
-| 5. Critic inputs | Same observation concatenated with self.context; wrapper/network paths in isaac_rlgames_wrapper.py and my_network_builder.py |
+| 5. Critic inputs | Environment exposes observation concatenated with context, but Gears YAML disables central_value_config. Active shared actor/value network receives only actor observation. See method_fidelity.md |
 | 6. xi generation | Environment context randomization/reset; set_sampling_dist receives train/test distribution from agent |
 | 7. Flow | my_a2c_common.py NormFlowDist and GOFLOW |
 | 8. Spline architecture | Inverse of Zuko MAF transform with MonotonicRQSTransform; 3 transforms; hidden_features=(64,64); 8 bins |
@@ -31,6 +31,6 @@ Inspected from Git objects at `a8c6af5` because the initial working tree has pre
 
 Gears GOFLOW.yaml selects alpha=0.5, beta=1.0, threshold=50; PPO MLP [256,128,64] with ELU, horizon=32, mini_epochs=8, learning_rate=3e-4, gamma=0.99, tau=0.95. max_frames=1000000. train_rl.py overrides minibatch_size to num_envs*2. Record actual transition counts, including uniform validation rollouts, rather than inferring them from epoch names.
 
-Full USD reference resolution, network dimensional checks, rollout counter semantics and flow checkpoint persistence remain open audit items. This map does not claim successful execution.
+Local Gears USD assets load, actor dimensions pass, and the wrapper saves flow weights. Actual simulator transitions are logged separately because upstream's frame counter increments only at reporting boundaries. Successful smoke execution is not evidence of learned competence.
 
 Follow-up inspection confirmed released bounds: context order is yaw_offset, x_offset, y_offset; yaw +/-pi, x/y +/-0.02m. This differs from the appendix. The released reward objective also differs from the literal paper equation; see method_fidelity.md. The distribution-update budgets count collected episodes, not individual transitions.
