@@ -15,6 +15,7 @@ from goflow.rl_components.my_a2c_common import NormFlowDist
 
 parser = argparse.ArgumentParser()
 parser.add_argument('run', type=Path)
+parser.add_argument('--prior-run', type=Path, help='Preceding session in the same checkpoint lineage')
 parser.add_argument('--agent_config', type=Path)
 parser.add_argument('--observation', type=Path, help='Recorded episode NPZ providing a fixed actor observation')
 args = parser.parse_args()
@@ -23,6 +24,14 @@ output.mkdir(exist_ok=True)
 metrics = [json.loads(s) for s in (args.run / 'training.jsonl').read_text().splitlines()]
 with (args.run / 'training_episodes.csv').open() as f:
     episodes = list(csv.DictReader(f))
+if args.prior_run:
+    prior_metrics = [json.loads(s) for s in (args.prior_run / 'training.jsonl').read_text().splitlines()]
+    resume = json.loads((args.run / 'resume.json').read_text())
+    if prior_metrics[-1]['transitions'] != resume['transitions']:
+        raise ValueError('Prior session does not end at the recorded resume transition')
+    metrics = prior_metrics + metrics
+    with (args.prior_run / 'training_episodes.csv').open() as f:
+        episodes = list(csv.DictReader(f)) + episodes
 fig, axes = plt.subplots(2, 2, figsize=(11, 7), constrained_layout=True)
 for validation, label in [('False', 'Flow training'), ('True', 'Uniform validation')]:
     selected = [r for r in episodes if r['validation_at_end'] == validation]
@@ -39,10 +48,16 @@ for key in ('actor_loss', 'critic_loss'):
     selected = [r for r in metrics if key in r]
     label=key+' (shared head)' if key=='critic_loss' and metrics[0]['privileged_critic_enabled'] else key
     axes[1,0].plot([r['transitions'] for r in selected], [r[key] for r in selected], label=label)
-if (args.run/'privileged_critic_losses.csv').exists():
+loss_paths = [args.run/'privileged_critic_losses.csv']
+if args.prior_run:
+    loss_paths.insert(0, args.prior_run/'privileged_critic_losses.csv')
+if any(p.exists() for p in loss_paths):
     transition_map={r['training_transitions']:r['transitions'] for r in metrics if not r['validation']}
-    with (args.run/'privileged_critic_losses.csv').open() as f:
-        central=[r for r in csv.DictReader(f) if int(r['training_transition']) in transition_map]
+    central=[]
+    for path in loss_paths:
+        if path.exists():
+            with path.open() as f:
+                central.extend(r for r in csv.DictReader(f) if int(r['training_transition']) in transition_map)
     axes[1,0].plot([transition_map[int(r['training_transition'])] for r in central],
                    [float(r['loss']) for r in central],label='privileged critic loss',alpha=.7)
 axes[1,0].set_ylabel('Logged PPO loss')
@@ -53,7 +68,7 @@ for ax in axes.flat:
     ax.grid(alpha=.2)
 for ax in (axes[0,0], axes[0,1], axes[1,0]):
     ax.legend(fontsize=8)
-fig.suptitle('Measured Gears pilot; training success is not held-out competence')
+fig.suptitle('Measured Gears training; independent held-out evaluation is reported separately')
 fig.savefig(output/'training.png', dpi=150)
 plt.close(fig)
 

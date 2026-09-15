@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: infrastructure, online training, privileged-input checks and synthetic Bayes3D inference checks pass. Original manipulation competence remains unestablished after the seed-0 privileged policy was continued to 5,001,216 transitions (0/100 uniform and 0/100 learned-flow held-out successes). See `gears_single_seed_continuation.md` for the latest outcome; three earlier pilots are preserved. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists. See `results/original_gears/report.md` for the measured outcome.
+Status: restoring the released 1024-env PPO batch recovered learning: the fresh seed-0 5M run achieves 5/100 uniform and 48/100 learned-flow held-out successes. The same policy is continuing toward 10M; the baseline gate is still being evaluated. See [current recovery evidence](gears_recovery.md). The earlier failed 64-env lineage remains in `gears_single_seed_continuation.md`; its results are historical. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
@@ -49,7 +49,7 @@ The environment's loop applying roll/pitch/yaw offsets is commented out. yaw_off
 
 Instrumentation logs online rollouts and actual counts, retains flow/optimizer weights in checkpoint metadata, and stops at a PPO rollout/update boundary under an explicit total-transition budget. It delegates PPO and distribution updates unchanged. The upstream frame counter increments only at reporting-batch boundaries, so it is not used as the actual simulator transition count.
 
-## Single-seed 5M continuation outcome
+## Historical 64-env single-seed 5M continuation outcome
 
 The privileged seed-0 policy was continued to 5,001,216 cumulative control
 transitions with its released settings and documented 64-env/central-critic

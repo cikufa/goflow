@@ -22,6 +22,8 @@ from experiments.common.belief_space import precondition_score
 parser = argparse.ArgumentParser()
 parser.add_argument('run', type=Path)
 parser.add_argument('--milestone', type=int, default=5000000)
+parser.add_argument('--reference-evaluation', type=Path,
+                    help='Optional same-policy evaluation under the initial flow')
 parser.add_argument('--initial-flow-checkpoint', type=Path, default=ROOT /
                     'results/original_gears/privileged_training_64/checkpoints/transitions_000200704.pth')
 args = parser.parse_args()
@@ -168,6 +170,21 @@ fig.savefig(output / 'precondition_slice.png', dpi=150)
 np.savez_compressed(output / 'precondition_slice.npz', x=x, y=y, log_density=lp, value=value,
                     joint_indicator=mask, observation=initial_obs)
 report['slice_joint_coverage'] = float(mask.mean())
+if args.reference_evaluation:
+    reference_summary = json.loads((args.reference_evaluation / 'summary.json').read_text())
+    reference_policy = torch.load(reference_summary['checkpoint'], map_location='cuda:0', weights_only=False)
+    assert all(torch.equal(value, reference_policy['model'][key]) for key, value in checkpoint['model'].items()), \
+        'Reference evaluation must use the identical actor'
+    assert Path(reference_summary['sampling_flow_checkpoint']).resolve() == args.initial_flow_checkpoint.resolve()
+    learned_summary = json.loads((directory / 'summary.json').read_text())
+    assert reference_summary['seeds'] == learned_summary['seeds'], 'Use matching episode seeds'
+    report['initial_flow_evaluation'] = {
+        'path': str(args.reference_evaluation), 'episodes': reference_summary['episodes'],
+        'success_rate': reference_summary['success_rate'],
+        'mean_return': reference_summary['mean_episode_reward'],
+        'learned_minus_initial_success_rate': learned_summary['success_rate'] - reference_summary['success_rate'],
+        'learned_minus_initial_mean_return': learned_summary['mean_episode_reward'] - reference_summary['mean_episode_reward'],
+        'scope': 'Same final actor and seed set under different context distributions; no method retraining or causal curriculum ablation.'}
 report['slice_observation_source'] = str(directory / f'episode_{episode:03d}.npz')
 report['interpretation_limit'] = 'Nonuniform density and context-sensitive values alone do not establish useful skill preconditions. Require held-out success and calibration; null AUC means only one observed outcome class.'
 (output / 'summary.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -214,4 +231,12 @@ lines += ['', 'The critic checks distinguish low-return calibration from success
           'Full per-step trajectories and seeds are in ../../evaluations/. '
           'Configuration diagnosis and execution commands are tracked in docs/gears_reproduction_diagnosis.md '
           'and docs/gears_single_seed_continuation.md.']
+if 'initial_flow_evaluation' in report:
+    r = report['initial_flow_evaluation']
+    lines += ['', '## Initial-density reference', '',
+              f"The identical final actor under the initial flow achieves {r['success_rate']:.1%} success "
+              f"and mean return {r['mean_return']:.3f} over {r['episodes']} episodes. "
+              f"Learned minus initial: {r['learned_minus_initial_success_rate']:+.1%} success and "
+              f"{r['learned_minus_initial_mean_return']:+.3f} return. Same recorded episode seeds; "
+              'this compares sampling regions, not the causal effect of the training curriculum.']
 (output / 'report.md').write_text('\n'.join(lines) + '\n')

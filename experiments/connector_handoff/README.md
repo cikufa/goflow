@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** baseline gate unmet. The seed-0 privileged Gears policy was continued to 5,001,216 transitions and remained unsuccessful (0/100 uniform and 0/100 learned-density held-out episodes). See [single-seed continuation](../../docs/gears_single_seed_continuation.md) and [configuration diagnosis](../../docs/gears_reproduction_diagnosis.md). Three earlier Gears pilots are preserved, including corrected constraints and a separately identified privileged-critic profile. Final held-out skill checks failed. See [execution report](../../results/original_gears/report.md) and [initial rollback record](../../docs/original_gears_pilot.md). The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
+**Status:** the released 1024-env batch recovered Gears learning: 5/100 uniform and 48/100 learned-flow successes at 5M, with the same seed continuing toward 10M. See [current recovery](../../docs/gears_recovery.md). The baseline gate is still being evaluated. The failed 64-env [continuation](../../docs/gears_single_seed_continuation.md) and earlier pilots remain historical records. The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 

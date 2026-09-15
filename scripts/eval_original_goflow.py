@@ -23,11 +23,15 @@ parser.add_argument('--deterministic', action='store_true')
 parser.add_argument('--released_history_reset', action='store_true',
                     help='Retain the upstream one-env stale-history bug instead of matching all-env training resets')
 parser.add_argument('--sampling', choices=('uniform', 'flow', 'nominal'), default='uniform')
+parser.add_argument('--sampling-flow-checkpoint', type=Path,
+                    help='Evaluate the same policy under a reference flow; logged density remains the policy checkpoint flow')
 parser.add_argument('--control', choices=('policy', 'zero', 'down'), default='policy',
                     help='zero/down are explicitly labeled physics diagnostics, never policy evaluation')
 args = parser.parse_args()
 if args.episodes < 1:
     parser.error('--episodes must be positive')
+if args.sampling_flow_checkpoint and args.sampling != 'flow':
+    parser.error('--sampling-flow-checkpoint requires --sampling flow')
 args.output.mkdir(parents=True, exist_ok=True)
 sys.argv = sys.argv[:1]
 local_kit_arguments = kit_arguments()
@@ -81,10 +85,15 @@ try:
     if 'goflow_distribution' not in checkpoint:
         raise ValueError('Checkpoint has no saved flow; cannot report learned-density checks.')
     flow.flow.load_state_dict(checkpoint['goflow_distribution'])
+    sampling_flow = flow
+    if args.sampling_flow_checkpoint:
+        reference_checkpoint = torch.load(args.sampling_flow_checkpoint, map_location='cuda:0', weights_only=False)
+        sampling_flow = NormFlowDist(low, high, len(bounds))
+        sampling_flow.flow.load_state_dict(reference_checkpoint['goflow_distribution'])
     class Nominal:
         def rsample(self, shape):
             return ((low + high) / 2).expand(*shape, len(bounds)).clone()
-    env.set_sampling_dist({'uniform': UniformDist(low, high), 'flow': flow,
+    env.set_sampling_dist({'uniform': UniformDist(low, high), 'flow': sampling_flow,
                            'nominal': Nominal()}[args.sampling])
     rows = []
     threshold = settings['config']['dr_method']['success_threshold']
@@ -92,7 +101,7 @@ try:
         seed = args.seed_base + episode
         env.seed(seed)
         if not args.released_history_reset:
-            # Training resets all 64 environments synchronously, clearing history.
+            # Training resets all environments synchronously, clearing history.
             # Upstream's one-env reset erroneously deletes only deque entry zero.
             # Start independent evaluation episodes with the training reset state.
             env.pose_history.clear()
@@ -147,7 +156,9 @@ try:
                'steps': len(rewards), 'duration_s': len(rewards) * env.step_dt,
                'wall_seconds': time.time() - start, 'log_p_phi': log_p,
                'checkpoint': str(args.checkpoint.resolve()), 'deterministic': args.deterministic,
-               'sampling': args.sampling, 'control': args.control}
+               'sampling': args.sampling, 'control': args.control,
+               'sampling_flow_checkpoint': str((args.sampling_flow_checkpoint or args.checkpoint).resolve())
+                   if args.sampling == 'flow' else None}
         rows.append(row)
         np.savez_compressed(args.output / f'episode_{episode:03d}.npz', xi=xi,
                             observations=observations, actions=actions, rewards=rewards,
@@ -166,6 +177,7 @@ try:
                'training': checkpoint.get('instrumentation'), 'checkpoint_origin': 'locally trained from released code',
                'privileged_critic': privileged, 'yaw_randomization_applied': False,
                'sampling': args.sampling,
+               'sampling_flow_checkpoint': rows[0]['sampling_flow_checkpoint'],
                'control': args.control,
                'episode_reset_note': ('Upstream one-env history reset preserved' if args.released_history_reset else
                                       'History cleared before each manual reset to match synchronous all-env training resets')}

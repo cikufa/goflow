@@ -136,3 +136,41 @@ continuation, not bitwise uninterrupted training. Intermediate evaluation uses
 The live rollout summarizer now reads only archives with a completed metrics
 row, avoiding a race against a partially written NPZ. Completed-run accounting
 and the five existing unit tests pass.
+
+## Final evaluation extensions
+
+The continuation completed 10,027,008 cumulative transitions (5,111,808 PPO,
+4,915,200 validation), 24 flow updates and 156 central-critic update calls.
+Cumulative agent wall time was 1,200.64 seconds; the continuation was 607.82
+seconds. All checkpoint tensors and recorded PPO losses are finite. The final
+complete training phase had 61.1% success over 4096 episodes. These training
+episodes do not replace the independent final evaluation.
+
+One offline 8M analysis process failed during SciPy import with an unexpected
+`inspect.Signature` comparison TypeError. Its unchanged retry and five fresh
+SciPy import probes passed. Both logs are retained (`analysis_8m.log`,
+`analysis_8m_retry.log`, `scipy_import_probe.log`); the cause is unestablished.
+This occurred before checkpoint analysis and did not interrupt training.
+
+The evaluator can now use a reference sampling flow while holding the actor
+fixed; its logged `log_p_phi` still comes from the trained policy's flow.
+The analysis checks actor tensor equality, sampling-checkpoint identity and
+matching seeds before reporting this comparison. This is a sampling-region
+comparison, not an ablation of how the training curriculum affected learning.
+
+```bash
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/goflow1024_seed0_2s_to10m/checkpoints/final.pth \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --episodes 100 --seed-base 40000 --sampling flow \
+  --sampling-flow-checkpoint results/original_gears/recovery_1024_seed0/checkpoints/transitions_000229376.pth \
+  --output results/original_gears/goflow1024_seed0_2s_to10m/evaluations/initial_flow_reference
+scripts/project_python.sh scripts/analyze_gears_reproduction.py \
+  results/original_gears/goflow1024_seed0_2s_to10m --milestone 10000000 \
+  --initial-flow-checkpoint results/original_gears/recovery_1024_seed0/checkpoints/transitions_000229376.pth \
+  --reference-evaluation results/original_gears/goflow1024_seed0_2s_to10m/evaluations/initial_flow_reference
+```
+
+Training plots support `--prior-run` to include both sessions of this lineage;
+the independent probe is excluded. Central-value loss axes use restored critic
+counters, without adding the prior transition offset twice.

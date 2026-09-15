@@ -10,6 +10,18 @@ The existing project environment was reused: Python 3.10.21, Isaac Sim 4.2.0.2, 
 
 Bayes3D rendering/inference uses a separate project-local Conda prefix, Torch 2.2.0+cu118, JAX 0.4.20 and a local 11.8 assembler. Its documented rendering subset omits declared GenJAX/Open3D/timm dependencies; full unchanged-package dependency satisfaction is not claimed. Both environments have YAML and frozen-package exports. No sudo, system driver/toolkit changes, external credentials, substantial deletions or download over 20 GB were used. Isaac Sim license acceptance was explicitly authorized by the user.
 
+## Current 1024-env recovery
+
+The released parallelism now runs. A fresh seed-0 run with the released
+32768-transition rollout and 2048 minibatch completed 5,013,504 total transitions.
+Held-out success is 5/100 uniform and 48/100 learned flow. The same policy is
+continuing toward 10M; see [recovery commands and evidence](gears_recovery.md).
+The older unsuccessful 64-env results below are preserved as history. No reward,
+duration, context bounds or actor architecture was changed for this recovery.
+The central critic uses the explicit released-commented configuration. Startup
+has intermittently stalled/crashed; a process-local 16-thread Carb cap allowed
+the current continuation to initialize, without establishing a general fix.
+
 ## Earlier original-task pilots (before the continuation)
 
 | Pilot | Source | Control transitions | PPO transitions | Uniform validation | Agent runtime |
