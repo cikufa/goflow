@@ -107,7 +107,7 @@ try:
     rows = []
     threshold = settings['config']['dr_method']['success_threshold']
     for episode in range(args.episodes):
-        seed = args.seed_base + episode
+        seed = args.seed_base + (episode // 4 if args.grasp_fixture_cases else episode)
         env.seed(seed)
         if args.grasp_fixture_cases:
             from experiments.connector_handoff.environment import GRASP_OFFSET

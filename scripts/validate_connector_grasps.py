@@ -19,6 +19,8 @@ parser.add_argument('--trials-per-grasp', type=int, default=50)
 parser.add_argument('--seed', type=int, default=41000)
 parser.add_argument('--output', type=Path, default=ROOT/'results/custom_connector/grasp_validation')
 args = parser.parse_args()
+if args.trials_per_grasp < 1:
+    parser.error('--trials-per-grasp must be positive')
 args.output.mkdir(parents=True, exist_ok=True)
 kit = kit_arguments()
 from omni.isaac.lab.app import AppLauncher
@@ -99,6 +101,7 @@ try:
     advance(3, above, .012, 144)
     advance(4, above, .012, 48)
     arrays = {key: np.stack([row[key] for row in rows]) for key in rows[0]}
+    assert all(np.isfinite(value).all() for value in arrays.values())
     drift = np.linalg.norm(arrays['relative_pose'][-48:, :, :3]-effect[None, :, :3], axis=2).max(0)
     lift = arrays['object_pose'][-1, :, 2] - initial_object_z.cpu().numpy()
     success = attached.cpu().numpy() & (drift < .002) & (lift > .03)
