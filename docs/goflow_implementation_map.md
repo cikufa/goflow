@@ -1,6 +1,6 @@
 # Released implementation map
 
-Initial inspection used Git objects at `a8c6af5`; all execution now uses the fresh `reproduction` clone. The parent checkout's deletions remain preserved. Visual smoke completed; baseline training is underway.
+Initial inspection used Git objects at `a8c6af5`; all execution uses the fresh `reproduction` clone. The parent checkout's 207 deletions remain preserved. Three training pilots completed; original skill competence has not been established.
 
 | Item | Source and behavior |
 |---|---|

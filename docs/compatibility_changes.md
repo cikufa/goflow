@@ -47,3 +47,7 @@ Retest passed: exactly four grasp joints in four environments, each targeting it
 ## Independent evaluation episode history
 
 The released `_reset_idx` filters deque entries by environment IDs. Synchronous resets of 64 environments clear all ten history entries, but a one-environment reset removes only entry zero and retains history from the preceding episode. This causes evaluation initial states to differ from training and yielded negative critic predictions after the first episode. Final evaluation clears history before each manual reset, matching the all-env training reset state. The upstream environment implementation is preserved; `--released_history_reset` reproduces its one-env behavior. Earlier results are retained, and independent evaluations use separate output directories. The first independent episode is unaffected by this change.
+
+## Artifact-export transient
+
+One contact-sheet subprocess failed during NumPy import in Python's `_flatten_literal_params` with `AttributeError: 'tuple' object has no attribute 'append'`. A fresh NumPy import and the complete contact-sheet batch then passed without package changes. No cause was established; no system repair or hardware diagnosis is claimed. The successful batch generated and verified all ten final Gears contact sheets.

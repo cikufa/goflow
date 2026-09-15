@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** environment preparation and original Gears pilot execution are complete. The pilot failed its competence gate, and a conflicting cloned-grasp-joint defect was confirmed. See [pilot record](../../docs/original_gears_pilot.md). Connector implementation and scientific handoff evaluation have not begun.
+**Status:** baseline gate unmet. Three Gears pilots completed, including corrected constraints and a separately identified privileged-critic profile. Final held-out skill checks failed. See [execution report](../../results/original_gears/report.md) and [initial rollback record](../../docs/original_gears_pilot.md). The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 
@@ -137,6 +137,76 @@ The failed 1,024-env attempt used the same training command with `--num_envs 102
 
 ## Next execution gate
 
-Correct and verify the conflicting cloned grasp constraints, retrain the original policy, and establish skill competence before connector work. The initial released-code run is preserved as a rollback point. Enabling the paper's privileged critic will also require an explicitly documented configuration change; it is disabled in the released default.
+The constraint correction and privileged-critic reconstruction are verified, but manipulation competence is still missing. The initial released-code run is preserved at `b0a6ae1`; the constraint fix is `19390ef`; the explicit critic profile is `ddc238c`. Further baseline diagnosis or a usable author checkpoint is needed before claiming an original planning reproduction or interpreting the custom diagnostic. Do not infer a handoff-planning failure from these results.
 
-Commands for Gears evaluation, connector training, 20-trial evaluation, video generation and reporting will be added when those stages are implemented and validated. No placeholder results or scientific conclusion are claimed.
+Connector training and balanced handoff evaluation commands do not yet exist because those stages have not been implemented. The available original-task and component-check commands are documented below; no custom results are fabricated.
+
+## Corrected and privileged pilots
+
+```bash
+GOFLOW_ATTACHMENT_REPORT=attachments_after_fix.json scripts/project_python.sh -u scripts/check_gears_attachments.py
+GOFLOW_RUN_DIR=results/original_gears/corrected_training_64 \
+GOFLOW_TRANSITION_BUDGET=1000000 GOFLOW_SAVE_EVERY=100000 \
+  scripts/project_python.sh -u scripts/run_goflow.py --headless --task Gears-GOFLOW-v0 \
+  --num_envs 64 --seed 0 --exp_name corrected_baseline_64
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/corrected_training_64/checkpoints/final.pth \
+  --episodes 10 --released_history_reset --output results/original_gears/corrected_evaluation
+
+GOFLOW_RUN_DIR=results/original_gears/privileged_smoke_64 \
+GOFLOW_TRANSITION_BUDGET=4096 GOFLOW_SAVE_EVERY=4096 \
+  scripts/project_python.sh -u scripts/run_goflow.py --headless --task Gears-GOFLOW-v0 \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --num_envs 64 --seed 0 --exp_name privileged_smoke_64
+GOFLOW_RUN_DIR=results/original_gears/privileged_training_64 \
+GOFLOW_TRANSITION_BUDGET=2000000 GOFLOW_SAVE_EVERY=200000 \
+  scripts/project_python.sh -u scripts/run_goflow.py --headless --task Gears-GOFLOW-v0 \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --num_envs 64 --seed 0 --exp_name privileged_baseline_64
+scripts/project_python.sh scripts/check_privileged_critic.py results/original_gears/privileged_training_64
+```
+
+## Final independent Gears evaluations and visualizations
+
+```bash
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/privileged_training_64/checkpoints/final.pth \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --episodes 10 --output results/original_gears/privileged_independent_uniform
+scripts/project_python.sh -u scripts/eval_original_goflow.py \
+  --checkpoint results/original_gears/privileged_training_64/checkpoints/final.pth \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --episodes 10 --sampling flow --seed-base 20000 --video \
+  --output results/original_gears/privileged_independent_flow
+scripts/project_python.sh scripts/summarize_training_rollouts.py results/original_gears/privileged_training_64
+scripts/project_python.sh scripts/export_central_value_losses.py results/original_gears/privileged_training_64 \
+  --tensorboard 'logs/2026-09-15_00-58-54_privileged_baseline_64_Gears-GOFLOW-v0_GOFLOW_0_[]/summaries'
+scripts/project_python.sh scripts/plot_original_goflow.py results/original_gears/privileged_training_64 \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --observation results/original_gears/privileged_independent_uniform/episode_000.npz
+for video in results/original_gears/privileged_independent_flow/videos/*.mp4; do
+  scripts/project_python.sh scripts/make_video_contact_sheet.py "$video" \
+    --output "results/original_gears/privileged_independent_flow/contact_sheets/$(basename "${video%.mp4}").png" \
+    --title 'Independent Gears evaluation; not a connector trial'
+done
+scripts/project_python.sh scripts/make_video_contact_sheet.py \
+  results/original_gears/privileged_independent_flow/videos/episode_000.mp4 \
+  --output results/original_gears/privileged_independent_flow/contact_sheets/episode_000.png \
+  --raw-dir results/original_gears/privileged_independent_flow/raw_frames/episode_000
+scripts/project_python.sh scripts/summarize_original_goflow.py
+```
+
+The TensorBoard path above is the actual executed run; a rerun prints its new timestamped log path. Earlier evaluations retained the upstream history-reset bug and are preserved separately. `--released_history_reset` reproduces that behavior; final independent evaluations match training reset history. These are Gears tests, not the requested 20 balanced connector trials.
+
+## Bayes3D and planner component checks
+
+The separate perception environment and exact installation commands are documented in [Bayes3D audit](../../docs/bayes3d_feasibility.md). Its complete installed exports are `environment_bayes3d.yml` and `requirements_bayes3d_frozen.txt`. Three declared optional-library dependencies remain omitted; the renderer/inference subset is explicitly identified in the audit. The Isaac environment still passes `pip check`.
+
+```bash
+scripts/bayes3d_python.sh -u scripts/smoke_bayes3d.py
+scripts/bayes3d_python.sh -u scripts/check_bayes3d_pose_inference.py
+scripts/project_python.sh scripts/plot_bayes3d_probe.py
+scripts/project_python.sh -m unittest discover -s tests -v
+```
+
+Synthetic pose-inference evidence is also preserved under `results/infrastructure/`. These tests do not constitute an online original planning/inspection reproduction. Generic BFS and Equation 7 are in `experiments/common/belief_space.py`; task-specific effects, belief equality/threshold calibration and camera integration remain outstanding.

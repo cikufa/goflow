@@ -49,3 +49,8 @@ python train_rl.py --task=<env>-<method>-v0 --checkpoint=<path-to-checkpoint>
   primaryClass = {cs.RO}
 }
 ```
+
+
+## Local reproduction workspace
+
+This clean clone preserves upstream commit `a8c6af5de7f427418783fd9faa20d50f38b734a9`. Exact environment and execution commands are in [the reproduction README](experiments/connector_handoff/README.md). The original-task pilots ran, but the baseline competence gate remains unmet; the connector experiment has not been completed. See [project status](docs/project_status.md) and [method fidelity](docs/method_fidelity.md).

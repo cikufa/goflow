@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: infrastructure and 1,024-transition visual Gears smoke passed. The initial 1,001,472-transition released-code pilot scored 0/10 on held-out uniform evaluation. A conflicting cloned-joint defect was confirmed; see original_gears_pilot.md. No custom task or online planner results exist.
+Status: infrastructure, online training, privileged-input checks and synthetic Bayes3D inference checks pass. Original manipulation competence remains unestablished after three pilots, including a 2,000,896-transition privileged-critic run. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists. See `results/original_gears/report.md` for the measured outcome.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.
@@ -9,19 +9,19 @@ Artifact classes: A = directly released; B = fully specified reimplementation; C
 
 | Component | Paper | Official code | What we use | Modified? | Reason |
 |---|---|---|---|---|---|
-| Simulator/robot (A) | IsaacLab, Franka gear insertion | MyPandaEnv in med_gear/direct_panda_position.py; local assets | Original environment first | Compatibility only | Space aliases and runtime batch-size fix; visual smoke passed |
+| Simulator/robot (A) | IsaacLab, Franka gear insertion | MyPandaEnv in med_gear/direct_panda_position.py; local assets | Native simulator, local assets | Explicit compatibility fixes | Space aliases, runtime batch size, and one constraint per cloned grasp; see compatibility_changes.md |
 | PPO (A) | Actor-critic PPO | my_a2c_common.py, my_a2c_continuous.py and RL Games | Released implementation | No | Preserve training behavior |
 | Actor observations (A) | Ten poses and finite-difference velocities in Section 5.1 | Policy observation excludes context; history implementation present | Released observations | No | Do not feed hidden geometry to actor |
-| Privileged critic (A code, disabled config) | V(s, xi) | Environment exposes context but selected YAML disables central value; shared value sees actor observation only | Preserve disabled configuration in released baseline | No | Paper-level privileged critic reconstruction must be explicit |
+| Privileged critic (A code, configuration assumption) | V(s, xi) | Environment exposes context; selected YAML disables central value | Initial pilots preserve default; final profile enables exact commented central-value settings | Yes, explicit profile | Input separation/value dependence verified; trained competence not established |
 | Flow (A) | Neural spline flow, three transforms, 64 features, eight bins | NormFlowDist: MAF with MonotonicRQSTransform, inverse transform, (64,64), three transforms, eight bins | Exact released construction | No | Preserve direction and normalization conventions |
 | Flow hyperparameters (A) | K=100; alpha/beta searched | Gears YAML: alpha=0.5, beta=1.0, num_training_iters=100 | Gears values | No | No manual retuning |
 | Domain (A) | x,y in +/-0.05 m; yaw in +/-0.393 rad | x,y +/-0.02 m; yaw +/-pi | Released bounds for baseline | No | Confirmed paper/code discrepancy; runtime behavior pending |
-| Checkpoint (D released artifact) | Trained Gears policies evaluated | No checkpoints in tree or GitHub releases; models/ contains geometry | Retraining original released configuration | Logging wrapper | No claim of released-checkpoint reproduction; persist flow with PPO weights |
+| Checkpoint (D released artifact) | Trained Gears policies evaluated | No checkpoints in tree or GitHub releases; models/ contains geometry | Three local training pilots with recorded provenance | Logging wrapper | No claim of released-checkpoint reproduction; flow and critic weights persisted |
 | Belief precondition (B/C) | Equation 7 combines value and density tests in belief expectation | No planner implementation found | Weighted joint-indicator expectation in common/belief_space.py; unit-tested only | Added | Numerical thresholds/representation still need task-specific assumptions |
 | BFS (B) | Algorithm 2 uses FIFO frontier, sampled effects, visited states | Not found in released tree | Literal generic algorithm in common/belief_space.py; unit-tested only | Added | No alternative search or handoff objective; no online planning claim |
 | Belief/effects (C) | Factored object-pose beliefs and abstract skill effects | Not found | Not implemented | Pending | Need documented representation, equality, effects and sampling assumptions |
 | INSPECT (C) | Object-parameterized observation action | Not found | Not implemented | Pending | No special look-before-grasp trigger |
-| Bayes3D integration (C/D) | RGB-D likelihood, coarse-to-fine SMC MAP, grid posterior | No integration found; Bayes3D separately public | Feasibility investigation pending | No | Cannot label an observation model fallback Bayes3D |
+| Bayes3D integration (C, partial) | RGB-D likelihood, coarse-to-fine SMC MAP, grid posterior | No GoFlow integration found; separate library public | Actual Bayes3D renderer plus explicit SMC/grid adapter in isolated process | Added | Synthetic-image checks pass; uniform-color/SMC/grid assumptions documented; no Isaac RGB-D/online inspection claim |
 | Taskboard assets (A) | Gear board | taskboard/ and models/ USD/STL files | Released geometry | No | Loaded in visual Gears smoke without private submodule |
 | Connector adaptation | Requested diagnostic | Not upstream | Not started | Pending | Must first validate and commit original reproduction |
 

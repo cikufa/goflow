@@ -17,7 +17,7 @@ fonttools==4.65.0
 fsspec==2026.7.0
 gitdb==4.0.12
 GitPython==3.1.62
--e git+https://github.com/aidan-curtis/goflow.git@a8c6af5de7f427418783fd9faa20d50f38b734a9#egg=goflow
+-e git+https://github.com/aidan-curtis/goflow.git@ddc238ca5197be4e6389edbd3905cfbe41102fc2#egg=goflow
 grpcio==1.84.0
 gym==0.23.1
 gym-notices==0.1.0
