@@ -1,4 +1,9 @@
 wandb
+# Reproduction runtime and outputs (never commit these)
+/.cache/
+/.conda/
+/.deps/
+/results/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

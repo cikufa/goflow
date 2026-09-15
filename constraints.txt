@@ -1,0 +1,23 @@
+# Historical compatibility selections; not recovered author environment.
+# IsaacLab v1.4.1 pins torch and rl-games, requires numpy<2.
+torch==2.4.0+cu118
+torchvision==0.19.0+cu118
+numpy==1.26.4
+rl-games==1.6.1
+gymnasium==0.29.1
+gym==0.23.1
+zuko==1.3.1
+scipy==1.14.1
+matplotlib==3.9.2
+pillow==10.4.0
+opencv-python==4.10.0.84
+moviepy==1.0.3
+transformers==4.44.2
+setuptools==69.5.1
+sympy==1.13.2
+warp-lang==1.4.1
+pybullet==3.2.7
+# Match Isaac Sim 4.2's bundled botocore to avoid mixed AWS APIs.
+boto3==1.34.68
+botocore==1.34.68
+s3transfer==0.10.1
