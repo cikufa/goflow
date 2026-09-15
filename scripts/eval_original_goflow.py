@@ -17,6 +17,8 @@ parser.add_argument('--checkpoint', required=True, type=Path)
 parser.add_argument('--task', choices=('gears', 'connector'), default='gears')
 parser.add_argument('--grasp-fixture-cases', action='store_true',
                     help='Connector-only paired fixed grasp/fixture contexts; diagnostic, not executed handoffs')
+parser.add_argument('--fixed-context', type=float, nargs='+',
+                    help='Explicit context for a nominal diagnostic; uses no flow sampling')
 parser.add_argument('--agent_config', type=Path, default=ROOT/'goflow/environments/med_gear/agents/GOFLOW.yaml')
 parser.add_argument('--episodes', type=int, default=10)
 parser.add_argument('--seed-base', type=int, default=10000)
@@ -37,6 +39,8 @@ if args.sampling_flow_checkpoint and args.sampling != 'flow':
     parser.error('--sampling-flow-checkpoint requires --sampling flow')
 if args.grasp_fixture_cases and (args.task != 'connector' or args.sampling != 'nominal'):
     parser.error('--grasp-fixture-cases requires --task connector --sampling nominal')
+if args.fixed_context is not None and (args.sampling != 'nominal' or args.grasp_fixture_cases):
+    parser.error('--fixed-context requires nominal sampling and cannot be combined with paired cases')
 args.output.mkdir(parents=True, exist_ok=True)
 sys.argv = sys.argv[:1]
 local_kit_arguments = kit_arguments()
@@ -90,6 +94,9 @@ try:
         critic_model = privileged_value_model(checkpoint, settings['config']['central_value_config'])
     bounds = list(cfg.dr_ranges.values())
     low, high = torch.tensor([b[0] for b in bounds]), torch.tensor([b[1] for b in bounds])
+    nominal = (low + high)/2 if args.fixed_context is None else torch.tensor(args.fixed_context)
+    if nominal.shape != low.shape or not bool(torch.all((nominal >= low) & (nominal <= high))):
+        raise ValueError('Fixed context must match the task dimensions and lie inside its bounds')
     flow = NormFlowDist(low, high, len(bounds))
     if 'goflow_distribution' not in checkpoint:
         raise ValueError('Checkpoint has no saved flow; cannot report learned-density checks.')
@@ -101,7 +108,7 @@ try:
         sampling_flow.flow.load_state_dict(reference_checkpoint['goflow_distribution'])
     class Nominal:
         def rsample(self, shape):
-            return ((low + high) / 2).expand(*shape, len(bounds)).clone()
+            return nominal.expand(*shape, len(bounds)).clone()
     env.set_sampling_dist({'uniform': UniformDist(low, high), 'flow': sampling_flow,
                            'nominal': Nominal()}[args.sampling])
     rows = []

@@ -20,6 +20,7 @@ from experiments.common.belief_space import precondition_score
 parser = argparse.ArgumentParser()
 parser.add_argument('run', type=Path)
 parser.add_argument('--milestone', type=int, default=5000000)
+parser.add_argument('--prior-run', type=Path, help='Previous session in the same checkpoint lineage')
 args = parser.parse_args()
 out = args.run/'analysis'/str(args.milestone)
 out.mkdir(parents=True, exist_ok=True)
@@ -123,6 +124,11 @@ if (paired/'episodes.csv').exists():
                 mean_goal_distance_m=float(np.mean([float(row['final_goal_distance_m']) for row in rows])))
 report['limit'] = 'Calibration and fixed-state slices do not establish a sequential handoff or a belief-space planning result.'
 metrics = [json.loads(line) for line in (args.run/'training.jsonl').read_text().splitlines()]
+if args.prior_run:
+    previous = [json.loads(line) for line in (args.prior_run/'training.jsonl').read_text().splitlines()]
+    resume = json.loads((args.run/'resume.json').read_text())
+    assert previous[-1]['transitions'] == resume['transitions']
+    metrics = previous + metrics
 fig, axes = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
 for validating, label in ((False, 'Flow training'), (True, 'Uniform validation')):
     rows = [row for row in metrics if row['validation'] == validating and 'phase_mean_return' in row]

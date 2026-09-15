@@ -52,7 +52,10 @@ try:
     # Visible placement jitter, shared domain for the two local grasp actions.
     jitter = torch.zeros(n, 3, device=env.device).uniform_(-.003, .003)
     jitter[:, 2] = 0
-    state = env.scene['peg'].data.root_state_w[:, :7].clone()
+    # Both actions must start from the same visible-object placement domain.
+    # INSERT's reset otherwise shifts the object with its sampled grasp offset.
+    common_object = IPose.from_pose(INITIAL_CFG.WORLD_T_PEG_START).repeat(n)
+    state = torch.cat((common_object.pos + env.scene.env_origins, common_object.quat), 1)
     state[:, :3] += jitter
     env.scene['peg'].write_root_pose_to_sim(state)
     env.scene['peg'].write_root_velocity_to_sim(torch.zeros(n, 6, device=env.device))
