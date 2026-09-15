@@ -66,6 +66,8 @@ from omni.isaac.lab_tasks.utils.wrappers.rl_games import RlGamesGpuEnv
 
 import goflow.environments.med_gear.direct_panda_position
 import goflow.environments
+if args_cli.task == 'Connector-GOFLOW-v0':
+    import experiments.connector_handoff.environment
 
 import pathlib
 import logging

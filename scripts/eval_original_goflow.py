@@ -14,6 +14,7 @@ from experiments.common.runtime import kit_arguments
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint', required=True, type=Path)
+parser.add_argument('--task', choices=('gears', 'connector'), default='gears')
 parser.add_argument('--agent_config', type=Path, default=ROOT/'goflow/environments/med_gear/agents/GOFLOW.yaml')
 parser.add_argument('--episodes', type=int, default=10)
 parser.add_argument('--seed-base', type=int, default=10000)
@@ -58,6 +59,10 @@ try:
             return reward
 
     cfg = MyPandaEnvCfg()
+    if args.task == 'connector':
+        from experiments.connector_handoff.environment import ConnectorEnv, ConnectorInsertEnvCfg
+        cfg = ConnectorInsertEnvCfg()
+        EvaluationGears = ConnectorEnv
     cfg.scene.num_envs = 1
     cfg.seed = args.seed_base
     view_target = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).multiply(
@@ -169,13 +174,13 @@ try:
         writer_csv = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer_csv.writeheader()
         writer_csv.writerows(rows)
-    summary = {'episodes': len(rows), 'success_rate': float(np.mean([r['success'] for r in rows])),
+    summary = {'task': args.task, 'episodes': len(rows), 'success_rate': float(np.mean([r['success'] for r in rows])),
                'mean_episode_reward': float(np.mean([r['episode_reward'] for r in rows])),
                'mean_final_goal_distance_m': float(np.mean([r['final_goal_distance_m'] for r in rows])),
                'success_definition': f'upstream return >= {threshold}; not a physical seating certificate',
                'seeds': [r['seed'] for r in rows], 'checkpoint': str(args.checkpoint.resolve()),
                'training': checkpoint.get('instrumentation'), 'checkpoint_origin': 'locally trained from released code',
-               'privileged_critic': privileged, 'yaw_randomization_applied': False,
+               'privileged_critic': privileged, 'yaw_randomization_applied': args.task == 'connector',
                'sampling': args.sampling,
                'sampling_flow_checkpoint': rows[0]['sampling_flow_checkpoint'],
                'control': args.control,
