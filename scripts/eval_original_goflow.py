@@ -14,11 +14,14 @@ from experiments.common.runtime import kit_arguments
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint', required=True, type=Path)
+parser.add_argument('--agent_config', type=Path, default=ROOT/'goflow/environments/med_gear/agents/GOFLOW.yaml')
 parser.add_argument('--episodes', type=int, default=10)
 parser.add_argument('--seed-base', type=int, default=10000)
 parser.add_argument('--output', type=Path, default=ROOT / 'results/original_gears')
 parser.add_argument('--video', action='store_true')
 parser.add_argument('--deterministic', action='store_true')
+parser.add_argument('--released_history_reset', action='store_true',
+                    help='Retain the upstream one-env stale-history bug instead of matching all-env training resets')
 parser.add_argument('--sampling', choices=('uniform', 'flow', 'nominal'), default='uniform')
 parser.add_argument('--control', choices=('policy', 'zero', 'down'), default='policy',
                     help='zero/down are explicitly labeled physics diagnostics, never policy evaluation')
@@ -58,7 +61,7 @@ try:
     cfg.viewer.lookat = tuple(view_target)
     cfg.viewer.eye = tuple(p + offset for p, offset in zip(view_target, (.4, .4, .35)))
     env = EvaluationGears(cfg, render_mode='rgb_array' if args.video else None)
-    settings = yaml.safe_load((ROOT / 'goflow/environments/med_gear/agents/GOFLOW.yaml').read_text())['params']
+    settings = yaml.safe_load(args.agent_config.read_text())['params']
     builder = A2CBuilder()
     builder.load(settings['network'])
     model = ModelA2CContinuousLogStd(builder).build({
@@ -68,6 +71,10 @@ try:
     checkpoint = torch.load(args.checkpoint, map_location='cuda:0', weights_only=False)
     model.load_state_dict(checkpoint['model'])
     model.eval()
+    privileged = 'assymetric_vf_nets' in checkpoint
+    if privileged:
+        from experiments.common.checkpoints import privileged_value_model
+        critic_model = privileged_value_model(checkpoint, settings['config']['central_value_config'])
     bounds = list(cfg.dr_ranges.values())
     low, high = torch.tensor([b[0] for b in bounds]), torch.tensor([b[1] for b in bounds])
     flow = NormFlowDist(low, high, len(bounds))
@@ -84,6 +91,11 @@ try:
     for episode in range(args.episodes):
         seed = args.seed_base + episode
         env.seed(seed)
+        if not args.released_history_reset:
+            # Training resets all 64 environments synchronously, clearing history.
+            # Upstream's one-env reset erroneously deletes only deque entry zero.
+            # Start independent evaluation episodes with the training reset state.
+            env.pose_history.clear()
         obs, _ = env.reset()
         if args.video:
             # Fill render buffers without advancing physics or policy state.
@@ -113,7 +125,10 @@ try:
                     action[:, 2] = -1
             observations.append(policy_obs.cpu().numpy()[0])
             actions.append(action.cpu().numpy()[0])
-            values.append(float(out['values'][0]))
+            with torch.no_grad():
+                value = critic_model({'obs': torch.clamp(obs['critic'], -5, 5),
+                                      'is_train': False})['values'] if privileged else out['values']
+            values.append(float(value[0]))
             peg_poses.append(env.scene['peg'].data.root_state_w[0, :7].cpu().numpy().copy())
             joint_positions.append(env.robots['robot1'].data.joint_pos[0].cpu().numpy().copy())
             if writer:
@@ -137,7 +152,7 @@ try:
         np.savez_compressed(args.output / f'episode_{episode:03d}.npz', xi=xi,
                             observations=observations, actions=actions, rewards=rewards,
                             peg_poses=peg_poses, joint_positions=joint_positions,
-                            nonprivileged_values=values)
+                            **{'privileged_values' if privileged else 'nonprivileged_values': values})
         print(json.dumps({k: v for k, v in row.items() if k != 'initial_condition'}), flush=True)
     with (args.output / 'episodes.csv').open('w') as f:
         writer_csv = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -149,10 +164,11 @@ try:
                'success_definition': f'upstream return >= {threshold}; not a physical seating certificate',
                'seeds': [r['seed'] for r in rows], 'checkpoint': str(args.checkpoint.resolve()),
                'training': checkpoint.get('instrumentation'), 'checkpoint_origin': 'locally trained from released code',
-               'privileged_critic': False, 'yaw_randomization_applied': False,
+               'privileged_critic': privileged, 'yaw_randomization_applied': False,
                'sampling': args.sampling,
                'control': args.control,
-               'episode_reset_note': 'Upstream pose-history reset behavior preserved; initial observations logged.'}
+               'episode_reset_note': ('Upstream one-env history reset preserved' if args.released_history_reset else
+                                      'History cleared before each manual reset to match synchronous all-env training resets')}
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     env.close()
 except Exception:

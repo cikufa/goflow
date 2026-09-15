@@ -38,6 +38,7 @@ class Skill:
     name: str
     precondition: Callable[[Hashable], float]
     sample_effect: Callable[[Hashable, np.random.Generator], Hashable]
+    unconditional: bool = False  # e.g. published INSPECT has Pre = all beliefs
 
 
 @dataclass
@@ -66,10 +67,10 @@ def bfs(initial, goal, skills, eta, rng, *, max_expansions=10000):
             return SearchResult('resource_limit', None, expanded, trace)
         expanded += 1
         for skill in skills:
-            score = float(skill.precondition(b))
+            score = 1.0 if skill.unconditional else float(skill.precondition(b))
             if not np.isfinite(score) or not 0 <= score <= 1:
                 raise ValueError(f'Invalid applicability probability for {skill.name}')
-            applicable = score > eta
+            applicable = skill.unconditional or score > eta
             event = {'expansion': expanded, 'belief': repr(b), 'skill': skill.name,
                      'score': score, 'applicable': applicable, 'prefix': plans[b].copy()}
             if applicable:

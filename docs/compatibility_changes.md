@@ -1,6 +1,6 @@
 # Compatibility changes
 
-The project-local Conda environment, pinned CUDA-enabled PyTorch, Isaac Sim 4.2.0.2 and Isaac Lab v1.4.1 are installed. Infrastructure and Gears visual smoke checks pass. Minimal source patches and their effects are recorded below; released-code training is underway.
+The project-local Conda environment, pinned CUDA-enabled PyTorch, Isaac Sim 4.2.0.2 and Isaac Lab v1.4.1 are installed. Infrastructure and Gears visual smoke checks pass. Three baseline training pilots have completed; skill competence remains unestablished. Minimal source patches and their effects are recorded below.
 
 The selected stack and unresolved versions are in `environment_setup_plan.md`. Exact author versions are not specified by upstream. Each future patch must record its triggering failure, minimal diff, validation and potential effect on scientific conclusions.
 
@@ -43,3 +43,7 @@ The first 1,024-environment headless attempt remained at simulation startup for 
 The live USD probe found seven grasp joints in a four-environment scene: env0 has one, and env1–3 have two each with conflicting local offsets. `create_rigid_attachments` used a unique name even when the cloned env0 joint already existed. Remove the unique-name lookup and author the intended joint at the same path, overriding the inherited constraint's attributes. This is one removed executable line; no reward/PPO/flow modification. It changes actual simulation behavior, so the first pilot is preserved at commit `b0a6ae1` and must not be pooled with corrected training. The fix restores one rigid grasp with each environment's sampled transform; it is not a handoff-specific mechanism.
 
 Retest passed: exactly four grasp joints in four environments, each targeting its own hand/gear pair and each with its own sampled local transform. Evidence: `results/original_gears/attachments_after_fix.json`. Command: `GOFLOW_ATTACHMENT_REPORT=attachments_after_fix.json scripts/project_python.sh -u scripts/check_gears_attachments.py`.
+
+## Independent evaluation episode history
+
+The released `_reset_idx` filters deque entries by environment IDs. Synchronous resets of 64 environments clear all ten history entries, but a one-environment reset removes only entry zero and retains history from the preceding episode. This causes evaluation initial states to differ from training and yielded negative critic predictions after the first episode. Final evaluation clears history before each manual reset, matching the all-env training reset state. The upstream environment implementation is preserved; `--released_history_reset` reproduces its one-env behavior. Earlier results are retained, and independent evaluations use separate output directories. The first independent episode is unaffected by this change.

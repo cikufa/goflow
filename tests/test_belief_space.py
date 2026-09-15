@@ -36,6 +36,13 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(result.expanded, 2)  # paper starts visited empty
         self.assertEqual(bfs('goal', lambda b: True, [], .9, np.random.default_rng(0)).plan, [])
 
+    def test_no_precondition_means_all_beliefs(self):
+        def forbidden_check(b):
+            raise AssertionError('An unconditional skill has no applicability test')
+        inspect = Skill('Inspect', forbidden_check, lambda b, rng: 'observed', unconditional=True)
+        result = bfs('prior', lambda b: b == 'observed', [inspect], 1., np.random.default_rng(0))
+        self.assertEqual(result.plan, ['Inspect'])
+
 
 if __name__ == '__main__':
     unittest.main()
