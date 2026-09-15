@@ -75,6 +75,8 @@ from goflow.rl_components.isaac_rlgames_wrapper import RlGamesVecEnvWrapper
 from goflow.rl_components.my_models import ModelA2CContinuousLogStd
 from goflow.rl_components.my_network_builder import A2CBuilder 
 from goflow.rl_components.my_a2c_continuous import A2CAgent
+if os.environ.get("GOFLOW_RUN_DIR"):
+    from experiments.common.instrumentation import InstrumentedA2CAgent as A2CAgent
 from goflow.rl_components.my_players import PpoPlayerContinuous
 
 from rl_games.algos_torch import model_builder

@@ -25,3 +25,11 @@ The host shell exposes ROS Python paths and Python user-site packages. `scripts/
 ## Candidate dependency pins
 
 `constraints.txt` holds Lab-prescribed Torch/RL Games pins and conservative historical choices for formerly unpinned libraries. Zuko 1.3.1 is a compatibility assumption, not a recovered author pin. The original upstream flow classes passed CUDA sampling, log-density and gradient checks. Gears runtime validation is still pending.
+
+## Clean-clone Gears startup
+
+The first released CLI attempt failed because goflow/logs did not exist; scripts/run_goflow.py creates the intended ignored directory and supplies project-local Kit settings. The second failed Isaac Lab 1.4 validation: action_space and observation_space missing. Added explicit space aliases equal to the released num_actions/num_observations/num_states. Replaced runtime class uses of global NUM_ENVS=1024 with self.num_envs so the documented --num_envs option applies consistently to IK buffers, attachments and rewards. The default 1024-environment behavior is preserved.
+
+A one-iteration Gears run reached PPO but crashed at checkpoint naming: mean_rewards was unbound before the first reporting batch. Initialize that display/checkpoint-name variable to NaN; no optimizer data or reward changes. The 4-env visual smoke subsequently completed 1,024 actual transitions in 12.91 seconds of agent runtime, saved a checkpoint and a 202-frame video, and exited 0.
+
+Opt-in instrumentation is selected by GOFLOW_RUN_DIR; ordinary upstream CLI behavior is otherwise unchanged. It delegates training, records transitions/rollouts/losses, persists the flow, and applies GOFLOW_TRANSITION_BUDGET at a horizon boundary. Logging density checks use existing sampled xi and consume no extra random samples.

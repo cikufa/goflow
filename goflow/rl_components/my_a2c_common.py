@@ -2269,6 +2269,8 @@ class ContinuousA2CBase(A2CBase):
         self.writer.add_scalar('target_rewards/step', 0, 0)
         self.writer.add_scalar('target_success/step', 0, 0)
 
+        # A short run can end before the first 4096-episode reporting batch.
+        mean_rewards = float('nan')
         while True:
             if(not self.validating):
                 epoch_num = self.update_epoch()

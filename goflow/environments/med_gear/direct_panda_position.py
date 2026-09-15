@@ -197,6 +197,10 @@ class MyPandaEnvCfg(DirectRLEnvCfg):
         # "gear_mass": (0.8, 1.2),  # Add mass scale to DR ranges
     }
     num_states = num_observations+len(dr_ranges)
+    # Isaac Lab 1.4 validates explicit spaces before mapping legacy size fields.
+    observation_space = num_observations
+    action_space = num_actions
+    state_space = num_states
 
     
     def __post_init__(self):
@@ -418,7 +422,7 @@ class MyPandaEnv(DirectRLEnv):
 
             ik_controller_cfg = DifferentialIKControllerCfg(command_type="pose", use_relative_mode=False, ik_method="dls")
             self._ik_controllers[robot_name] = DifferentialIKController(
-                cfg=ik_controller_cfg, num_envs=NUM_ENVS, device=self.sim.device
+                cfg=ik_controller_cfg, num_envs=self.num_envs, device=self.sim.device
             )
         
         self.context = torch.zeros(self.num_envs, len(self.cfg.dr_ranges), device=self.sim.device)
@@ -501,7 +505,7 @@ class MyPandaEnv(DirectRLEnv):
     def create_rigid_attachments(self, attachment_path:str, robot_path:str, extra_attachments=[]):
 
         fixed_joints = []
-        for env_id in range(NUM_ENVS):
+        for env_id in range(self.num_envs):
 
             env0_path = f"/World/envs/env_{env_id}/{robot_path}"
             fixed_joint_path = env0_path + "/AssemblerFixedJoint"
@@ -663,7 +667,7 @@ class MyPandaEnv(DirectRLEnv):
             processed_actions[:, 3:] = default_action[:, 3:] + actions[:, 3:]
             processed_actions[:, 3:] *= self.rot_action_scale
 
-        delta = torch.zeros(NUM_ENVS, 6, device=self.sim.device)
+        delta = torch.zeros(self.num_envs, 6, device=self.sim.device)
         delta[:, :3] = processed_actions[:, :3]
         
         if rotation_enabled:
@@ -699,11 +703,11 @@ class MyPandaEnv(DirectRLEnv):
         
         # Compute the goal pose
         if INITIAL_CFG.relative_goal:
-            world_T_hole = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).repeat(NUM_ENVS)
-            des_hole_T_peg = IPose.from_pose(INITIAL_CFG.HOLE_T_PEG_GOAL).repeat(NUM_ENVS)
+            world_T_hole = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).repeat(self.num_envs)
+            des_hole_T_peg = IPose.from_pose(INITIAL_CFG.HOLE_T_PEG_GOAL).repeat(self.num_envs)
             goal_pose = world_T_hole.multiply(des_hole_T_peg)
         else:
-            goal_pose = IPose.from_pose(INITIAL_CFG.PEG_GOAL).repeat(NUM_ENVS)
+            goal_pose = IPose.from_pose(INITIAL_CFG.PEG_GOAL).repeat(self.num_envs)
         
         # Compute the difference between current and goal pose
         pos_diff = goal_pose.pos - current_pos
@@ -858,25 +862,25 @@ class MyPandaEnv(DirectRLEnv):
         if(INITIAL_CFG.moving_peg):
             world_T_peg = IPose(self.scene["peg"].data.root_state_w[:, :3]-self.scene.env_origins, self.scene["peg"].data.root_state_w[:, 3:7])
         else:
-            world_T_peg = IPose.from_pose(INITIAL_CFG.WORLD_T_PEG_START).repeat(NUM_ENVS)
+            world_T_peg = IPose.from_pose(INITIAL_CFG.WORLD_T_PEG_START).repeat(self.num_envs)
 
         if(INITIAL_CFG.moving_hole):
             world_T_hole = IPose(self.scene["hole"].data.root_state_w[:, :3]-self.scene.env_origins, self.scene["hole"].data.root_state_w[:, 3:7])
         else:
-            world_T_hole = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).repeat(NUM_ENVS)
+            world_T_hole = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).repeat(self.num_envs)
                     
         if(INITIAL_CFG.relative_goal):
             hole_T_peg = world_T_hole.invert().multiply(world_T_peg)
             des_hole_T_peg = IPose.from_pose(INITIAL_CFG.HOLE_T_PEG_GOAL)
-            peg_distance =  des_hole_T_peg.repeat(NUM_ENVS).multiply(hole_T_peg.invert())
+            peg_distance =  des_hole_T_peg.repeat(self.num_envs).multiply(hole_T_peg.invert())
         else:
             if(INITIAL_CFG.moving_peg):
                 des_world_T_peg =  IPose.from_pose(INITIAL_CFG.PEG_GOAL)
-                peg_distance = des_world_T_peg.repeat(NUM_ENVS).multiply(world_T_peg.invert())
+                peg_distance = des_world_T_peg.repeat(self.num_envs).multiply(world_T_peg.invert())
 
             if(INITIAL_CFG.moving_hole):
                 des_world_T_hole =  IPose.from_pose(INITIAL_CFG.HOLE_GOAL)
-                hole_distance = des_world_T_hole.repeat(NUM_ENVS).multiply(world_T_hole.invert())
+                hole_distance = des_world_T_hole.repeat(self.num_envs).multiply(world_T_hole.invert())
 
         distance = 0
         for (di, (pose_distance, weights)) in enumerate([(peg_distance, INITIAL_CFG.peg_goal_weights), (hole_distance, INITIAL_CFG.hole_goal_weights)]):

@@ -40,3 +40,11 @@ The README checkpoint example omits `--play`, but train_rl.py uses `train = not 
 `get_full_state_weights` saves model, optimizer, counters and environment state, but has no explicit GoFlow distribution/optimizer entry. Future checkpoint instrumentation must preserve the learned density as well as the actor and critic; do not assume ordinary PPO checkpoints reconstruct it. Verify the environment-state path before deciding the exact patch.
 
 No success or failure of the hypothesized research gap can be inferred from this setup audit.
+
+## Confirmed active release behavior (clean-clone execution audit)
+
+The Gears YAML comments out central_value_config. A2CBase.has_central_value is therefore false; get_values and get_action_values pass only obs['obs'] to the shared actor/value network. The appended privileged obs['states'] is not used by that active model. The release contains an optional central-value implementation, but the selected Gears configuration does not enable it. A claim of a trained privileged V(s,xi) from this default run would be false. The released-code baseline remains unchanged; any subsequent paper-level reconstruction must explicitly enable and validate the missing privileged critic and record architecture assumptions.
+
+The environment's loop applying roll/pitch/yaw offsets is commented out. yaw_offset is sampled and logged but does not rotate the object. Default episode length is 2 seconds, whereas appendix A.3 says 4 seconds. These differences remain preserved in the released baseline.
+
+Instrumentation logs online rollouts and actual counts, retains flow/optimizer weights in checkpoint metadata, and stops at a PPO rollout/update boundary under an explicit total-transition budget. It delegates PPO and distribution updates unchanged. The upstream frame counter increments only at reporting-batch boundaries, so it is not used as the actual simulator transition count.
