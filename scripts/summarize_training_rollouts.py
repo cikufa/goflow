@@ -15,7 +15,10 @@ resume = args.run / 'resume.json'
 transition_offset = json.loads(resume.read_text()).get('transitions', 0) if resume.exists() else 0
 discarded_reset_steps, previous_phase = 0, None
 metrics = [json.loads(line) for line in (args.run / 'training.jsonl').read_text().splitlines()]
-for rollout_index, path in enumerate(sorted((args.run / 'rollouts').glob('*.npz'))):
+# Metrics are appended only after the corresponding NPZ finishes writing.
+# While training is live, a later file may exist but still be incomplete.
+paths = sorted((args.run / 'rollouts').glob('*.npz'))[:len(metrics)]
+for rollout_index, path in enumerate(paths):
     with np.load(path) as data:
         phase = metrics[rollout_index]['validation']
         if previous_phase is not None and phase != previous_phase:
