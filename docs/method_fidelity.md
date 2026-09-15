@@ -1,6 +1,6 @@
 # Method fidelity: initial audit
 
-Status: restoring the released 1024-env PPO batch recovered learning: the fresh seed-0 5M run achieves 5/100 uniform and 48/100 learned-flow held-out successes. The same policy is continuing toward 10M; the baseline gate is still being evaluated. See [current recovery evidence](gears_recovery.md). The earlier failed 64-env lineage remains in `gears_single_seed_continuation.md`; its results are historical. A conflicting cloned-joint defect was corrected and independent evaluation history now matches training. No custom connector task or online robot-planner result exists.
+Status: the one-seed original Gears sanity gate passes after restoring the released 1024-env PPO batch. At 10M, held-out success is 6/100 uniform and 59/100 learned flow; the joint precondition selects 54 flow episodes with 49 successes (90.7% precision). See [baseline and limitations](gears_baseline.md) and [execution record](gears_recovery.md). This is a functional baseline with an explicit privileged-critic configuration, not numerical replication of the paper's full benchmark. The failed 64-env lineage is historical. No custom connector task or online robot-planner result exists yet.
 
 Paper: https://proceedings.mlr.press/v267/curtis25a.html (including appendix and Algorithm 2).
 Official code: https://github.com/aidan-curtis/goflow at `a8c6af5de7f427418783fd9faa20d50f38b734a9`.

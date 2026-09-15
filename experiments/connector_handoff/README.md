@@ -12,7 +12,7 @@ The sections below retain the initial environment installation record. Their env
 
 # Connector handoff reproduction
 
-**Status:** the released 1024-env batch recovered Gears learning: 5/100 uniform and 48/100 learned-flow successes at 5M, with the same seed continuing toward 10M. See [current recovery](../../docs/gears_recovery.md). The baseline gate is still being evaluated. The failed 64-env [continuation](../../docs/gears_single_seed_continuation.md) and earlier pilots remain historical records. The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
+**Status:** the minimal Gears baseline gate passes: 6/100 uniform and 59/100 learned-flow successes at 10M; the joint precondition selects 54 flow episodes with 49 successes. See [baseline and limitations](../../docs/gears_baseline.md) and [exact recovery commands](../../docs/gears_recovery.md). The failed 64-env [continuation](../../docs/gears_single_seed_continuation.md) and earlier pilots are historical. The connector experiment is not complete: no custom scene, connector training, online planner demo, or balanced handoff trials have run.
 
 The initial working tree contained deletions of almost all upstream files. The user selected a fresh subdirectory clone; those deletions remain untouched.
 
@@ -282,8 +282,9 @@ policy failed across randomized contexts. The user accepted this diagnostic and 
 no further seating or randomized scripted-controller audit is planned. This diagnostic does not reproduce the
 original GoFlow policy and does not establish randomized-task solvability.
 
-## Single-seed continuation to 5M
+## Historical 64-env single-seed continuation to 5M
 
 The exact resume, milestone-evaluation, calibration and plotting commands, measured
 results and stop decision are in [the continuation record](../../docs/gears_single_seed_continuation.md).
-No seed/method sweep or 10M extension ran. The connector gate remains unmet.
+That lineage stopped at 5M. The later 1024-env recovery is recorded separately
+in [the working baseline](../../docs/gears_baseline.md).

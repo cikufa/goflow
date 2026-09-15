@@ -1,4 +1,4 @@
-# Project status: baseline gate unmet
+# Project status: original Gears sanity baseline established
 
 **The complete connector experiment has not been implemented or run. The scientific outcome is inconclusive.**
 
@@ -12,10 +12,12 @@ Bayes3D rendering/inference uses a separate project-local Conda prefix, Torch 2.
 
 ## Current 1024-env recovery
 
-The released parallelism now runs. A fresh seed-0 run with the released
-32768-transition rollout and 2048 minibatch completed 5,013,504 total transitions.
-Held-out success is 5/100 uniform and 48/100 learned flow. The same policy is
-continuing toward 10M; see [recovery commands and evidence](gears_recovery.md).
+The released parallelism now runs. The seed-0 lineage with the released
+32768-transition rollout and 2048 minibatch completed 10,027,008 total transitions.
+Held-out success is 6/100 uniform and 59/100 learned flow. The joint precondition
+accepts 54 flow episodes, of which 49 succeed. This passes the minimal functional
+baseline gate; see [baseline report](gears_baseline.md) and
+[recovery commands and evidence](gears_recovery.md).
 The older unsuccessful 64-env results below are preserved as history. No reward,
 duration, context bounds or actor architecture was changed for this recovery.
 The central critic uses the explicit released-commented configuration. Startup
@@ -63,9 +65,9 @@ The plotted privileged value at one fixed recorded initial observation over the 
 - Synthetic posterior evidence: `results/infrastructure/bayes3d-pose-probe/`.
 - Exact commands: `experiments/connector_handoff/README.md`.
 
-All connector-specific success rates, sensing rates, action-sequence distributions and handoff regret are **not available**, since zero connector trials ran. Reporting them as zero would be misleading. The available evidence does not falsify, partially establish or confirm the hypothesized handoff gap. Further original-skill diagnosis or a usable author checkpoint is needed to pass the requested baseline gate.
+All connector-specific success rates, sensing rates, action-sequence distributions and handoff regret are **not available**, since zero connector trials ran. Reporting them as zero would be misleading. The available evidence does not falsify, partially establish or confirm the hypothesized handoff gap. The corrected 1024-env baseline now supports beginning the custom diagnostic.
 
-## Latest single-seed continuation
+## Historical 64-env single-seed continuation
 
 Seed 0 now has 5,001,216 cumulative transitions: 2,578,432 PPO and 2,422,784 validation.
 The continuation added 3,000,320 transitions in 1,469.205 seconds; lineage runtime
