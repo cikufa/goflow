@@ -214,3 +214,26 @@ held-out evaluation audit covers 200 episodes / 9,400 steps, in addition to
 physical handoff diagnostics. Native library-import failures were preserved and
 retried, excluded from success denominators; their system-level cause is not
 established. No system changes or installations were made.
+
+## Approved empirical initialization stage
+
+The user explicitly approved the preceding proposal. Execute 1,000 context-only
+likelihood steps, check finite flow samples and coverage of both empirical modes,
+then run a new bounded 2M-transition PPO/GoFlow stage. Actor/critic weights come
+from the preserved original custom 10M warm start, not either failed aligned run.
+The fixture angle remains independent and uniform in the initialization target.
+No success labels or feasible-pair labels enter fitting. All prior results remain
+intact. Evaluate actual four-cell handoffs and random contexts before Gate B.
+
+```bash
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh scripts/prepare_empirical_flow_start.py --fit
+GOFLOW_HANDOFF_SPEC=experiments/connector_handoff/aligned_initialization_supported.json \
+GOFLOW_CPU_THREADS=16 \
+GOFLOW_RUN_DIR=results/custom_connector/final_handoff_experiment/training/empirical_init_2m \
+GOFLOW_TRANSITION_BUDGET=2000000 GOFLOW_SAVE_EVERY=1000000 \
+scripts/project_python.sh -u scripts/run_goflow.py --headless \
+  --task ConnectorAligned-GOFLOW-v0 \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --num_envs 1024 --seed 0 --exp_name connector_handoff_empirical_init_2m \
+  --checkpoint results/custom_connector/final_handoff_experiment/proposal/empirical_flow_start.pth
+```

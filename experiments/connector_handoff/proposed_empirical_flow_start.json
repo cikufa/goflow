@@ -1,5 +1,6 @@
 {
-  "status": "PROPOSED_NOT_EXECUTED_REQUIRES_APPROVAL",
+  "status": "APPROVED_FOR_1000_FIT_STEPS_AND_2M_TRANSITIONS",
+  "approval": "User explicitly replied 'i approve' to the empirical initialization and bounded 2M online stage proposal.",
   "reason": "Neither the tight nor the data-scaled released flow initialization visited either canonical feasible handoff region during PPO. A context-only initialization fit changes the released training protocol and is not silently adopted.",
   "alignment_spec": "experiments/connector_handoff/aligned_initialization_supported.json",
   "actor_critic_source": "results/custom_connector/final_handoff_experiment/training/warm_start.pth",

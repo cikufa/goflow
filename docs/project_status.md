@@ -23,10 +23,11 @@ prospective-inspection limitation of GoFlow.
 
 All earlier results remain intact. New results/report:
 `results/custom_connector/final_handoff_experiment/`. Configuration, commands,
-limitations and the proposed (not executed) empirical-flow initialization are
+limitations and the approved empirical-flow initialization are
 in [the continuation record](../experiments/connector_handoff/final_experiment.md).
 The proposal adds a context-only likelihood initialization absent from the
-release and awaits user approval under the algorithm-fidelity constraint.
+release. The user approved 1,000 initialization steps followed by a bounded
+2M-transition online stage; execution and acceptance checks are now in progress.
 
 The remaining sections retain the original-task history and pre-training audits.
 

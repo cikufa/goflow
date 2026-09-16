@@ -1,6 +1,6 @@
 """Preview a proposed context-only flow initialization; fitting is opt-in.
 
-The current experiment has not authorized the additional likelihood objective.
+The user approved this additional likelihood objective and a bounded 2M stage.
 The default command validates its inputs and writes a reviewable proposal only.
 """
 import argparse
@@ -55,6 +55,20 @@ if args.fit:
     weights['goflow_distribution_optimizer']=torch.optim.Adam(flow.flow.parameters(),lr=proposal['learning_rate']).state_dict()
     weights['handoff_alignment']=spec
     weights['empirical_initialization_proposal']=proposal
+    with torch.no_grad():
+        torch.manual_seed(proposal['seed'] + 1)
+        samples=flow.rsample((10000,)).cpu().numpy()
+        assert np.isfinite(samples).all()
+        assert all(torch.isfinite(v).all() for v in flow.flow.state_dict().values())
+        coverage={}
+        for label,sign,angle in [('left',-1,-np.pi/2),('right',1,np.pi/2)]:
+            center=np.median(contexts[contexts[:,1]*sign>0,:3],axis=0)
+            near=(np.abs(samples[:,:3]-center)<[.001,.0005,.0001]).all(axis=1)
+            coverage[label]={'near_mode':int(near.sum()),
+                             'near_feasible_fixture':int((near&(np.abs(samples[:,3]-angle)<.2)).sum())}
+        review['initial_sample_coverage']={'samples':len(samples),'counts':coverage,
+            'tolerance_yaw_x_y':[.001,.0005,.0001],'fixture_tolerance_rad':.2}
+        np.savez_compressed(output.parent/'initial_flow_samples.npz',context=samples)
     torch.save(weights,output)
     review['losses']=losses
     review['checkpoint_sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
