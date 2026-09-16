@@ -10,12 +10,17 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('folder',type=Path)
 args=parser.parse_args()
 with np.load(args.folder/'trajectories.npz') as data: phase=data['phase'][:,0]
+controller='INSERT'
+matrix=args.folder/'physics_matrix.json'
+if matrix.exists():
+    import json
+    controller=json.loads(matrix.read_text())['controller'].capitalize()+' INSERT'
 reader=imageio.get_reader(str(args.folder/'handoff.mp4'))
 frames=reader.count_frames()
 end=lambda value:int(np.flatnonzero(phase==value)[-1])
 items=[(0,'Initial scene'),(end(0)+1,'Visible-pose approach'),(end(1)+1,'Measured attachment / close'),
        (end(2),'Grasp closed'),(end(4),'Lift and hold'),(end(5),'Transport waypoint'),
-       (end(7),'Staged INSERT initialization'),((end(7)+frames-1)//2,'Oracle INSERT'),(frames-1,'Final oracle state')]
+       (end(7),'Staged INSERT initialization'),((end(7)+frames-1)//2,controller),(frames-1,'Final state')]
 font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',18)
 sheet=Image.new('RGB',(1440,900),'white');draw=ImageDraw.Draw(sheet)
 for i,(index,label) in enumerate(items):

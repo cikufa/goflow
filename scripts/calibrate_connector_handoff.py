@@ -22,6 +22,8 @@ parser.add_argument('--trials-per-grasp', type=int, default=100)
 parser.add_argument('--seed', type=int, default=61000)
 parser.add_argument('--output', type=Path, default=ROOT/'results/custom_connector/final_handoff_experiment/calibration')
 parser.add_argument('--video', action='store_true', help='Record native env_0 calibration video')
+parser.add_argument('--video-env-index', type=int, default=0,
+                    help='Environment index shown by the native video camera')
 parser.add_argument('--fixture-distance-scale', type=float, default=1.)
 parser.add_argument('--attach-before-close', action='store_true', help='Explicit fixed-grasp timing diagnostic: constrain measured approach pose before closure')
 parser.add_argument('--stage-frame', choices=('hand','connector'), default='hand')
@@ -53,7 +55,9 @@ try:
     cfg = ConnectorEnvCfg()
     cfg.scene.num_envs = 2 * args.trials_per_grasp
     cfg.viewer.origin_type = "env"
-    cfg.viewer.env_index = 0
+    if not 0 <= args.video_env_index < cfg.scene.num_envs:
+        parser.error('--video-env-index must be smaller than twice --trials-per-grasp')
+    cfg.viewer.env_index = args.video_env_index
     cfg.seed = args.seed
     cfg.fixture_distance_scale = args.fixture_distance_scale
     env = ConnectorEnv(cfg, render_mode="rgb_array" if args.video else None)
@@ -229,7 +233,7 @@ try:
     np.savez_compressed(args.output/'trajectories.npz', **arrays, contexts=contexts.cpu().numpy(),
                         effect=effect, success=success, stage_success=stage_success,
                         origins=env.scene.env_origins.cpu().numpy(), grasp_error=grasp_error.cpu().numpy())
-    summary = dict(seed=args.seed, attach_before_close=args.attach_before_close, fixture_distance_scale=args.fixture_distance_scale, stage_hold_steps=args.stage_hold_steps, stage_height=args.stage_height, stage_frame=args.stage_frame, scope=__doc__, trials_per_grasp=args.trials_per_grasp,
+    summary = dict(seed=args.seed, attach_before_close=args.attach_before_close, fixture_distance_scale=args.fixture_distance_scale, stage_hold_steps=args.stage_hold_steps, stage_height=args.stage_height, stage_frame=args.stage_frame, scope=__doc__, trials_per_grasp=args.trials_per_grasp, video_env_index=args.video_env_index if args.video else None,
                    perturbation='Independent uniform +/-3 mm planar visible placement; nominal yaw, same existing macro domain',
                    success_rates={name: float(success[i*args.trials_per_grasp:(i+1)*args.trials_per_grasp].mean())
                                   for i, name in enumerate(('GraspLeft', 'GraspRight'))},

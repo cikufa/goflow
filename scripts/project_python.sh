@@ -4,11 +4,14 @@ set -euo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_PREFIX="${GOFLOW_ENV_PREFIX:-$PROJECT_ROOT/../.conda/envs/goflow-repro}"
 ENV_PREFIX="$(cd -- "$ENV_PREFIX" && pwd)"
+ISAACLAB_ROOT="${GOFLOW_ISAACLAB_ROOT:-$PROJECT_ROOT/../.deps/IsaacLab}"
+ISAACLAB_ROOT="$(cd -- "$ISAACLAB_ROOT" && pwd)"
+PROJECT_PYTHONPATH="$ISAACLAB_ROOT/source/extensions/omni.isaac.lab:$ISAACLAB_ROOT/source/extensions/omni.isaac.lab_assets:$ISAACLAB_ROOT/source/extensions/omni.isaac.lab_tasks"
 mkdir -p "$PROJECT_ROOT/.cache/"{tmp,pip,xdg,config,data,torch,numba,cuda,optix,gl}
 exec bwrap --ro-bind / / --bind "$PROJECT_ROOT" "$PROJECT_ROOT" \
   --bind "$ENV_PREFIX" "$ENV_PREFIX" \
   --dev-bind /dev /dev --proc /proc --chdir "$PROJECT_ROOT" \
-  --unsetenv PYTHONPATH --setenv PYTHONNOUSERSITE 1 \
+  --unsetenv PYTHONPATH --setenv PYTHONPATH "$PROJECT_PYTHONPATH" --setenv PYTHONNOUSERSITE 1 \
   --setenv TMPDIR "$PROJECT_ROOT/.cache/tmp" \
   --setenv PIP_CACHE_DIR "$PROJECT_ROOT/.cache/pip" \
   --setenv XDG_CACHE_HOME "$PROJECT_ROOT/.cache/xdg" \

@@ -301,6 +301,13 @@ original custom checkpoint remain intact. Gate B still fails; perception/planner
 scientific trials remain unexecuted. This is evidence of a remaining low-level
 learning problem, not evidence for the hypothesized planning gap.
 
+Four matched-seed videos of the final policy's complete physical handoff are in
+`results/custom_connector/final_handoff_experiment/videos/current_policy/`.
+Seed 70000 gives the representative outcome predicted by the aggregate result:
+feasible Left fails, feasible Right succeeds, and both blocked pairings fail.
+Each 42.96-second video has a labeled contact sheet and raw trajectories. These
+visualizations show low-level execution only; no perception or planner runs.
+
 ### Held-out evaluation and flow-objective limitation
 
 Held-out contexts (100 each, seeds 69000–69099) score 46% from the fitted/updated
