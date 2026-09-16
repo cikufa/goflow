@@ -33,7 +33,7 @@ for directory in sorted((run/'evaluations').iterdir()):
     if not directory.is_dir():
         continue
     summary = json.loads((directory/'summary.json').read_text())
-    assert summary['task'] == 'connector'
+    assert summary['task'] in ('connector', 'connector_aligned')
     with (directory/'episodes.csv').open() as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == summary['episodes']

@@ -5,6 +5,8 @@ validates macro execution and constrained hold, not frictional pickup quality.
 """
 import argparse
 import csv
+import hashlib
+import subprocess
 import json
 import os
 from pathlib import Path
@@ -33,6 +35,7 @@ if args.trials_per_grasp < 1:
 args.output.mkdir(parents=True, exist_ok=True)
 if (args.output/'summary.json').exists():
     raise FileExistsError('Refusing to overwrite completed calibration')
+(args.output/'provenance.json').write_text(json.dumps(dict(command=sys.argv, source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(), script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), environment_sha256=hashlib.sha256((ROOT/'experiments/connector_handoff/environment.py').read_bytes()).hexdigest()),indent=2)+'\n')
 kit = kit_arguments()
 from omni.isaac.lab.app import AppLauncher
 app = AppLauncher(headless=True, enable_cameras=args.video, kit_args=kit).app
@@ -49,6 +52,8 @@ try:
 
     cfg = ConnectorEnvCfg()
     cfg.scene.num_envs = 2 * args.trials_per_grasp
+    cfg.viewer.origin_type = "env"
+    cfg.viewer.env_index = 0
     cfg.seed = args.seed
     cfg.fixture_distance_scale = args.fixture_distance_scale
     env = ConnectorEnv(cfg, render_mode="rgb_array" if args.video else None)
@@ -87,6 +92,7 @@ try:
         import imageio.v2 as imageio
         env.render()
         for _ in range(8): env.sim.render()
+        imageio.imwrite(args.output/'initial_view.png',env.render())
         writer = imageio.get_writer(str(args.output/'handoff.mp4'),fps=24)
     rows = []
     attached = torch.zeros(n, dtype=torch.bool, device=env.device)
@@ -207,7 +213,11 @@ try:
     axes[0].legend(); fig.tight_layout(); fig.savefig(args.output/'grasp_distributions.png'); plt.close(fig)
     fig, axes = plt.subplots(1,2,figsize=(9,4))
     for ax, side in zip(axes,statistics):
-        ax.imshow(statistics[side]['correlation_xyz_rpy'],vmin=-1,vmax=1,cmap='coolwarm')
+        correlation=statistics[side]['correlation_xyz_rpy']
+        if correlation is not None:
+            ax.imshow(correlation,vmin=-1,vmax=1,cmap='coolwarm')
+        else:
+            ax.text(.5,.5,'Correlation requires at least two successes',ha='center',transform=ax.transAxes)
         ax.set_xticks(range(6),('x','y','z','roll','pitch','yaw'),rotation=45)
         ax.set_yticks(range(6),('x','y','z','roll','pitch','yaw')); ax.set_title(side)
     fig.tight_layout(); fig.savefig(args.output/'grasp_correlations.png'); plt.close(fig)
@@ -312,6 +322,8 @@ try:
     if writer: writer.close()
     env.close()
 except Exception:
+    if 'writer' in globals() and writer is not None:
+        writer.close()
     traceback.print_exc()
     sys.stdout.flush(); sys.stderr.flush()
     os._exit(1)

@@ -30,6 +30,10 @@ checkpoint = torch.load(source['checkpoint'], map_location='cuda:0', weights_onl
 config = yaml.safe_load((ROOT/'experiments/original_gears/privileged_goflow.yaml').read_text())['params']['config']
 low = torch.tensor([-.12, -.04, -.004, -np.pi])
 high = -low
+if "handoff_alignment" in checkpoint:
+    bounds = list(checkpoint["handoff_alignment"]["dr_ranges"].values())
+    low = torch.tensor([b[0] for b in bounds])
+    high = torch.tensor([b[1] for b in bounds])
 flow = NormFlowDist(low, high, 4)
 flow.flow.load_state_dict(checkpoint['goflow_distribution'])
 critic = privileged_value_model(checkpoint, config['central_value_config'])
@@ -91,7 +95,7 @@ for sampling in ('uniform', 'flow'):
     fig.savefig(out/f'{sampling}_calibration.png', dpi=150)
     plt.close(fig)
 
-x, angle = np.meshgrid(np.linspace(-.04, .04, 101), np.linspace(-np.pi, np.pi, 101))
+x, angle = np.meshgrid(np.linspace(float(low[1]), float(high[1]), 101), np.linspace(-np.pi, np.pi, 101))
 xi = torch.tensor(np.column_stack((np.zeros(x.size), x.ravel(), np.zeros(x.size), angle.ravel())), dtype=torch.float32, device='cuda:0')
 with torch.no_grad():
     obs = torch.tensor(initial_observation, device='cuda:0').expand(len(xi), -1)

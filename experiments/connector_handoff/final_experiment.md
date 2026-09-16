@@ -134,7 +134,7 @@ within 1 mrad yaw, 0.5 mm x, and 0.1 mm y of a measured cluster median, with fix
 unrestricted. This is a sampling configuration failure: released normalization
 maps a context box to width 10 while the initial base distribution has unit SD.
 A tight bounding box puts both measured modes near its corners, with initial
-joint densities around 1e-14. The 2M policy fails all four physical handoff cells.
+joint densities around 1e-14. The final 2M policy reaches 22/100 feasible Left, 0/100 feasible Right, and 0/100 in both blocked cells; all 400 joint preconditions reject. At 1M, all four cells scored 0/10. Flow/uniform held-out success is 41/100 and 27/100, which does not establish handoff competence.
 
 `aligned_initialization_supported.json` instead derives bounds from pooled
 empirical mean +/-5 SD, so the released width/10 sampling SD reflects the measured
@@ -158,3 +158,59 @@ The paper and release do not give numerical epsilon/eta or an exact calibration
 protocol for this task. Thus this epsilon is an explicit adaptation assumption,
 not a claimed published threshold. Planner thresholds remain unresolved and no
 final trials are run with a silently chosen value.
+
+
+## Latest bounded result and stop decision
+
+The supported-bounds stage completed 3,014,656 transitions (1,572,864 PPO;
+1,441,792 validation), seven flow updates, 327.40 agent seconds. Across both
+aligned attempts, additional compute totals 5,046,272 transitions and 535.99 agent
+seconds, excluding startup and independent evaluation. The latest checkpoint is
+`training/supported_3m/checkpoints/final.pth` under the final-experiment root,
+SHA256 `581a532b2344d4dc704a3ad3dcbd727b72d2bcb63c4cfc60100c6d3861d581e4`.
+It is a diagnostic checkpoint, not an accepted/frozen low-level system.
+
+| Stage | Feasible Left | Feasible Right | Blocked pairings |
+|---|---:|---:|---:|
+| Supported 1M | 3/10 | 1/10 | 0/10 each |
+| Supported 2M | 1/10 | 7/10 | 0/10 each |
+| Supported 3M | 6/100 | 67/100 | 0/100 each |
+
+There is no sustained Left improvement, so the optional additional 5M was not
+launched. Held-out flow/uniform success is 43/100 and 12/100. Flow-evaluation
+value/discounted-return correlation is 0.801, success AUC 0.911, log-density/return
+correlation 0.209. The existing five-percentile diagnostic calibration accepts
+43 flow episodes, with 86.0% precision/recall. This useful region does not cover
+the real grasp handoffs: all 400 are rejected at both the fixed inherited epsilon
+0.0002145213 and the independent five-percentile estimate 0.0002254338.
+
+Near the actual Left/Right grasp modes, PPO saw 47/713 transitions; when fixture
+angle is also within 0.2 rad of each feasible canonical case, both counts are
+zero. Near-mode tolerances: yaw 1 mrad, x 0.5 mm, y 0.1 mm. These are diagnostic
+neighborhoods, not proof that no generalization is possible. They explain why
+more raw transitions alone are not a justified next step. The critic predicts
+55.40 on feasible Left despite only 6% success; low density appropriately excludes
+this unreliable prediction. Mean V for feasible Right is 34.57, below JT=50.
+
+A lower, 30-mm staging point was physically tested and made Left infeasible; it
+was not adopted. The current scene, reward, threshold and validated 60-mm staging
+remain unchanged. The complete oracle handoff video is in
+`calibration/oracle_handoff_video/handoff.mp4`, with `contact_sheet.png`.
+The earlier single-sample correlation plot and off-scene camera attempts remain
+as debug artifacts; neither is presented as a successful visualization.
+
+`proposed_empirical_flow_start.json` and `scripts/prepare_empirical_flow_start.py`
+make the next possible adaptation reviewable. Default execution only validates
+inputs and writes a proposal. No likelihood fit or subsequent PPO has executed.
+It would initialize the **existing** flow with balanced empirical grasp contexts
+and independent uniform fixture angle, using no success labels or planner
+outcomes. Its additional likelihood objective is absent from the released
+procedure; user approval was requested before executing it. No automatic
+inspection rule, successor model, actor privilege or new planner objective is
+part of the proposal.
+
+The five unit tests and both checkpoint/trajectory audits pass. Each random
+held-out evaluation audit covers 200 episodes / 9,400 steps, in addition to
+physical handoff diagnostics. Native library-import failures were preserved and
+retried, excluded from success denominators; their system-level cause is not
+established. No system changes or installations were made.

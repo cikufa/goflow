@@ -4,27 +4,29 @@
 
 All work is in `/home/shekoufeh/goflow/reproduction`, branch `goflow-handoff-experiment`, with official remote `upstream` at https://github.com/aidan-curtis/goflow.git. Clean upstream SHA was recorded before edits: `a8c6af5de7f427418783fd9faa20d50f38b734a9`. The parent's 207 pre-existing tracked deletions remain preserved. At the user's request, commits through `10f704b` were pushed to their fork, `origin` at https://github.com/cikufa/goflow. Subsequent connector training commits are local.
 
-## Active connector continuation
+## Current connector acceptance gates (2026-09-16)
 
-The native closed-gripper task and visible-pose grasp macros have passed their
-local gates. The custom connector required an exposed insertion tip to clear
-closed fingers; the fixture still reverses the feasible grasp choice, including
-within the actual two-second episode. Each grasp macro succeeds 50/50 times in
-the specified visible-jitter/fixed-constraint validation.
+Actual GRASP → Stage → INSERT now executes without teleporting. The inherited
+macros were calibrated on 100 executions per grasp. A separately documented
+constraint-timing correction and neutral staging were then validated on 200
+executions per grasp. All 400 grasps/stages pass; oracle insertion succeeds
+99/100 and 100/100 in feasible Left/Right cases and 0/100 in blocked pairings.
 
-The first seed-0 INSERT run completed 5,013,504 transitions: 0/100 uniform and
-18/100 learned-flow successes. Four accepted flow episodes all succeed under
-the joint precondition, but the paired nominal fixture cases remain weak.
-The continuation completed 10,027,008 transitions, with 2/100 uniform and 33/100
-flow successes. The joint precondition accepts 28 flow episodes, 23 successful.
-Each nominal feasible grasp/fixture pairing succeeds only 2/10; their initial
-values remain below JT=50. Training stopped at the bounded 10M budget. The next
-gate is actual macro-to-INSERT state alignment and offset-learning diagnosis,
-before more PPO or planner scoring. No algorithm/task changes occurred during
-the training continuation. Grasp validation from a shared visible-object
-placement again passes 50/50 per choice.
-See [configuration, commands and results](../experiments/connector_handoff/training.md).
-No executed handoff, online perception or planner outcome is established.
+Two bounded aligned training attempts used 5,046,272 additional transitions in
+all. The latest policy scores 6/100 feasible Left, 67/100 feasible Right and
+0/100 blocked. Its learned flow/uniform evaluations score 43/100 and 12/100.
+The joint precondition rejects all 400 actual handoffs. The training audit finds
+no PPO exposure in the specified canonical feasible context neighborhoods.
+Gate B therefore fails. No camera-belief or scientific planner trials have run.
+The conclusion remains **INCONCLUSIVE**, with no evidence for or against a
+prospective-inspection limitation of GoFlow.
+
+All earlier results remain intact. New results/report:
+`results/custom_connector/final_handoff_experiment/`. Configuration, commands,
+limitations and the proposed (not executed) empirical-flow initialization are
+in [the continuation record](../experiments/connector_handoff/final_experiment.md).
+The proposal adds a context-only likelihood initialization absent from the
+release and awaits user approval under the algorithm-fidelity constraint.
 
 The remaining sections retain the original-task history and pre-training audits.
 
