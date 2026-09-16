@@ -124,3 +124,37 @@ scripts/project_python.sh -u scripts/run_goflow.py --headless \
   --num_envs 1024 --seed 0 --exp_name connector_handoff_aligned_2m \
   --checkpoint results/custom_connector/final_handoff_experiment/training/warm_start.pth
 ```
+
+### Bounded 2M result and initial sampling support correction
+
+The first aligned stage completed 2,031,616 additional transitions (1,048,576 PPO,
+983,040 uniform validation). Its actual grasp clusters received **zero** nearby
+PPO transitions, versus 1,685 Left and 2,433 Right in validation. Near means
+within 1 mrad yaw, 0.5 mm x, and 0.1 mm y of a measured cluster median, with fixture
+unrestricted. This is a sampling configuration failure: released normalization
+maps a context box to width 10 while the initial base distribution has unit SD.
+A tight bounding box puts both measured modes near its corners, with initial
+joint densities around 1e-14. The 2M policy fails all four physical handoff cells.
+
+`aligned_initialization_supported.json` instead derives bounds from pooled
+empirical mean +/-5 SD, so the released width/10 sampling SD reflects the measured
+spread. Grasp x is capped at +/-30 mm within the 70 mm connector body. This widens
+the continuous training extension, explicitly beyond the observed two clusters;
+it does not modify the released flow normalization, base distribution or updates.
+The same 100,000-sample initialization probe now visits 8/59 nearby Left/Right
+contexts, versus 0/0 before. This is improved support, not balanced sampling or a
+competence claim. Six reset oracle cases remain unchanged after this correction.
+
+The next bounded stage uses 3M transitions under these bounds. It restarts from
+the original 10M actor/critic rather than the 2M checkpoint which lost the
+right-handoff skill. Flow/optimizers are fresh as previously documented. All
+versions, checkpoints and results remain available. Total additional compute
+includes both runs; they are not misrepresented as one uninterrupted lineage.
+No planner or perception evaluation is authorized by these preliminary outcomes.
+
+The diagnostic Equation-7 analysis retains epsilon=0.0002145212929463014 from
+the prior custom analysis, without fitting it to aligned outcomes. JT remains 50.
+The paper and release do not give numerical epsilon/eta or an exact calibration
+protocol for this task. Thus this epsilon is an explicit adaptation assumption,
+not a claimed published threshold. Planner thresholds remain unresolved and no
+final trials are run with a silently chosen value.

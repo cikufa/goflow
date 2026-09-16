@@ -5,6 +5,7 @@ remain online. No demonstrations enter a learning loss or the actor observation.
 """
 import hashlib
 import json
+import os
 
 import gymnasium as gym
 import numpy as np
@@ -15,7 +16,7 @@ from omni.isaac.lab.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
 
 from .environment import ROOT, ConnectorEnv, ConnectorInsertEnvCfg, IPose
 
-SPEC_PATH = ROOT / 'experiments/connector_handoff/aligned_initialization.json'
+SPEC_PATH = ROOT / os.environ.get('GOFLOW_HANDOFF_SPEC', 'experiments/connector_handoff/aligned_initialization.json')
 SPEC = json.loads(SPEC_PATH.read_text())
 
 
