@@ -8,7 +8,7 @@ Does the published GoFlow belief-space planner acquire successor-relevant fixtur
 
 ## 2. GoFlow fidelity
 
-Released PPO, GoFlow objective/architecture, 105-input actor, 109-input privileged critic, action scaling, two-second episode and reward are retained. Custom grasp timing, physical staging and empirical reset initialization are explicit adaptations. Numerical epsilon/eta and an exact calibration recipe are absent from the released planner materials; diagnostic epsilon is inherited and not retuned. See experiments/connector_handoff/final_experiment.md and docs/method_fidelity.md.
+Released PPO, GoFlow objective/architecture, 105-input actor, 109-input privileged critic, action scaling, two-second episode and reward are retained. Custom grasp timing, physical staging, empirical reset initialization and the user-approved 1,000-step context-only flow likelihood initialization are explicit adaptations. The extra likelihood objective is absent from the released training procedure. Numerical epsilon/eta and an exact calibration recipe are absent from the released planner materials; diagnostic epsilon is inherited and not retuned. See experiments/connector_handoff/final_experiment.md and docs/method_fidelity.md.
 
 ## 3. Existing implementation inherited
 
@@ -27,22 +27,104 @@ Physical GRASP → elevated translation waypoint → common connector staging po
 Executed additional training:
 
 - results/custom_connector/final_handoff_experiment/training/aligned_2m: 2,031,616 additional transitions; 1,048,576 cumulative PPO / 983,040 validation; 5 flow updates.
+- results/custom_connector/final_handoff_experiment/training/empirical_init_2m: 2,031,616 additional transitions; 1,048,576 cumulative PPO / 983,040 validation; 5 flow updates.
 - results/custom_connector/final_handoff_experiment/training/supported_3m: 3,014,656 additional transitions; 1,572,864 cumulative PPO / 1,441,792 validation; 7 flow updates.
 
-The first tight-bound initialization starved both real grasp clusters. Data-based wider bounds improve initial support while retaining the released normalization and updates. Both warm-start experiments retain original actor/critic weights and start a fresh flow because their normalization domains differ. They are separate documented lineages, not one uninterrupted run.
+The first tight-bound initialization starved both real grasp clusters. Data-based wider bounds improve initial support while retaining the released normalization and updates. The two earlier attempts and the approved empirical-initialization stage each retain the original actor/critic warm-start weights. The new stage first fits the existing flow to balanced empirical grasp contexts with independent uniform fixture angle, then uses unchanged online GoFlow updates. These are separate documented lineages, not one uninterrupted run.
+
+Latest measured exposure:
+
+```json
+{
+  "region_tolerance_yaw_x_y": [
+    0.001,
+    0.0005,
+    0.0001
+  ],
+  "fixture_tolerance_rad": 0.2,
+  "centers": [
+    [
+      -0.008369268849492073,
+      -0.012018948793411255,
+      -0.00041747093200683594
+    ],
+    [
+      -0.0008484378922730684,
+      0.011927545070648193,
+      9.649991989135742e-05
+    ]
+  ],
+  "counts": {
+    "ppo": {
+      "total": 1048576,
+      "near_left": 150153,
+      "near_right": 171181,
+      "feasible_left_region": 9254,
+      "feasible_right_region": 10658
+    },
+    "validation": {
+      "total": 983040,
+      "near_left": 188,
+      "near_right": 51,
+      "feasible_left_region": 0,
+      "feasible_right_region": 0
+    }
+  },
+  "scope": "Transition exposure; repeated episode contexts are not independent episodes."
+}
+```
 
 ## 7. Learned flow/value/precondition
 
 | Fixture angle | Grasp | Policy successes | Mean return | Mean V | Mean density | Joint accepts |
 |---|---|---:|---:|---:|---:|---:|
-| -1.5708 | GraspLeft | 6/100 | 22.69 | 55.40 | 1.6e-05 | 0/100 |
-| -1.5708 | GraspRight | 0/100 | 17.94 | 18.33 | 0.000165 | 0/100 |
-| 1.5708 | GraspLeft | 0/100 | 24.84 | 7.62 | 1.65e-05 | 0/100 |
-| 1.5708 | GraspRight | 67/100 | 57.63 | 34.57 | 4.06e-05 | 0/100 |
+| -1.5708 | GraspLeft | 36/100 | 46.91 | 17.76 | 0.319 | 0/100 |
+| -1.5708 | GraspRight | 0/100 | 15.35 | 15.78 | 0.449 | 0/100 |
+| 1.5708 | GraspLeft | 0/100 | 11.96 | 12.85 | 0.365 | 0/100 |
+| 1.5708 | GraspRight | 95/100 | 149.60 | 102.54 | 0.388 | 100/100 |
 
 Fixed inherited custom diagnostic epsilon; published JT=50. Numerical epsilon/eta and a calibration protocol are absent from the release/paper. This is not a verified paper threshold.
 
-Plots and samples: results/custom_connector/final_handoff_experiment/precondition_analysis/supported_3m. No applicability threshold was lowered to admit a case.
+Plots and samples: results/custom_connector/final_handoff_experiment/precondition_analysis/empirical_2m. No applicability threshold was lowered to admit a case.
+
+Held-out random-context metrics:
+
+```json
+{
+  "uniform": {
+    "episodes": 100,
+    "successes": 7,
+    "mean_return": 22.098605793267488,
+    "mean_goal_distance_m": 0.031458276361227035,
+    "within_3mm": 7,
+    "mean_value": 19.299399757385252,
+    "mean_discounted_return": 16.463804489913375,
+    "value_rmse": 27.6041264896238,
+    "value_return_correlation": 0.5211477109432229,
+    "value_success_auc": 0.8878648233486943,
+    "density_return_correlation": 0.2569345612282985,
+    "precondition_accepted": 0,
+    "precondition_precision": null,
+    "precondition_recall": 0.0
+  },
+  "flow": {
+    "episodes": 100,
+    "successes": 46,
+    "mean_return": 65.04304470092057,
+    "mean_goal_distance_m": 0.022280640999088063,
+    "within_3mm": 46,
+    "mean_value": 42.262586765289306,
+    "mean_discounted_return": 45.80772550593956,
+    "value_rmse": 26.902572225839535,
+    "value_return_correlation": 0.7979494685939055,
+    "value_success_auc": 0.8796296296296297,
+    "density_return_correlation": -0.14402790773232513,
+    "precondition_accepted": 32,
+    "precondition_precision": 0.9375,
+    "precondition_recall": 0.6521739130434783
+  }
+}
+```
 
 ## 8. Physics reversal validation
 
@@ -78,15 +160,48 @@ No online-trial counterfactual replay ran. The four-cell low-level physics matri
 
 ## 16. Failure attribution
 
-The acceptance failure is in low-level learned competence and/or learned support of real handoff states. Sampling starvation was directly measured: in the supported 3M run, PPO saw 47/713 transitions near measured Left/Right grasp modes and zero in either canonical feasible neighborhood when fixture angle is also constrained to within 0.2 rad. An additional context-only likelihood initialization has been prepared but NOT executed; it requires approval because that objective is absent from the release. Feasible physical handoffs exist. Neither prospective-inspection failure nor a GoFlow planning limitation can be inferred. Several library-import failures occurred before simulation; failed launches were preserved and excluded, with unchanged retries. Their system-level cause is not established.
+The acceptance failure is in low-level learned competence and/or learned support of real handoff states. Previous supported-bounds training had zero measured PPO exposure in either canonical feasible neighborhood. The approved empirical flow initialization has now executed. Latest measured exposure is recorded in the run handoff_exposure.json and the report summary; these are transition counts, not independent episode counts. Feasible physical handoffs exist. Neither prospective-inspection failure nor a GoFlow planning limitation can be inferred. Several library-import failures occurred before simulation; failed launches were preserved and excluded, with unchanged retries. Their system-level cause is not established.
+
+Offline released-objective scale probe (not a causal intervention):
+
+```json
+{
+  "physical_context_volume": 3.633291635196656e-05,
+  "normalized_box_volume": 10000.0,
+  "omitted_affine_log_jacobian": 19.43312644958496,
+  "alpha": 0.5,
+  "beta": 1.0,
+  "loss_probe": {
+    "reward": {
+      "loss": 4.064839868130166e-11,
+      "gradient_l2": 5.892852872335652e-09
+    },
+    "entropy": {
+      "loss": -2.755468742066114e-09,
+      "gradient_l2": 2.0230233488405247e-08
+    },
+    "similarity_mc_at_identical_weights": {
+      "loss": 0.0,
+      "gradient_l2": 0.5156211853027344
+    }
+  },
+  "density_change": {
+    "log_density_correlation": 0.98234118693842,
+    "mean_absolute_log_density_change": 0.16110502183437347
+  },
+  "scope": "Offline held-out loss/gradient probe, not exact online updates or a causal intervention. Similarity loss is zero at identical weights; its finite-sample gradient need not be zero. No normalization, objective, optimizer or checkpoint was changed."
+}
+```
+
+The fitted initialization now covers both modes, but density is not established as a learned success region. Inspect the measured loss-scale imbalance before further training; no objective correction was applied.
 
 ## 17. Videos / contact sheets / timelines
 
-Complete actual oracle GRASP→Stage→INSERT video: calibration/oracle_handoff_video/handoff.mp4. Contact sheet: calibration/oracle_handoff_video/contact_sheet.png. These were visually inspected and show the actual task. Precondition slices: precondition_analysis/supported_3m/handoff_precondition_slices.png. No 20-episode online videos, planner contact sheets or belief timelines exist because the gates have not passed.
+Complete actual oracle GRASP→Stage→INSERT video: calibration/oracle_handoff_video/handoff.mp4. Contact sheet: calibration/oracle_handoff_video/contact_sheet.png. These were visually inspected and show the actual task. Precondition slices are saved alongside the current precondition analysis referenced above. No 20-episode online videos, planner contact sheets or belief timelines exist because the gates have not passed.
 
 ## 18. Fidelity limitations
 
-Gravity-disabled object and rigid-constraint grasp approximation; narrow planar grasp calibration; measured contact deflections and replay cannot restore PhysX internal contact caches; empirical box extends/interpolates the two macro modes; simulator/RNG state is not resumed across training sessions; numerical planner thresholds are underspecified by the release. Earlier original-task reproduction is a functional baseline, not a claim of matching all paper metrics.
+Gravity-disabled object and rigid-constraint grasp approximation; narrow planar grasp calibration; measured contact deflections and replay cannot restore PhysX internal contact caches; empirical box extends/interpolates the two macro modes; simulator/RNG state is not resumed across training sessions; numerical planner thresholds are underspecified by the release; the approved empirical flow likelihood initialization changes the released initialization objective. Earlier original-task reproduction is a functional baseline, not a claim of matching all paper metrics.
 
 ## 19. Scientific interpretation
 
@@ -102,6 +217,6 @@ Git provenance at report generation:
 {
   "upstream_sha": "a8c6af5de7f427418783fd9faa20d50f38b734a9",
   "branch": "goflow-handoff-experiment",
-  "head": "e8735a0f9018574de758cca95f10c9b39e053436"
+  "head": "5bd85a5a91d9e37321453be3af23f7d6c3c11cd2"
 }
 ```
