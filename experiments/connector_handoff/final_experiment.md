@@ -237,3 +237,126 @@ scripts/project_python.sh -u scripts/run_goflow.py --headless \
   --num_envs 1024 --seed 0 --exp_name connector_handoff_empirical_init_2m \
   --checkpoint results/custom_connector/final_handoff_experiment/proposal/empirical_flow_start.pth
 ```
+
+### Approved stage: executed result
+
+The approved 1,000-step fit executed, using source bank SHA verification and
+finite-weight/sample checks. Loss fell from 10.939 to 2.508. In 10,000 sampled
+contexts, 1,482/1,591 fell near Left/Right measured modes; 83/97 also fell within
+0.2 rad of the respective feasible fixture angle. These checks use yaw/x/y
+windows of 1 mrad / 0.5 mm / 0.1 mm. Fitted checkpoint SHA256:
+`00c9ad6aeed0c896e9328f5445e9b094314ac9d1f1ff9f7e211833e587191383`.
+
+`training/empirical_init_2m` completed 2,031,616 transitions: 1,048,576 PPO and
+983,040 uniform validation, five online flow updates, 207.42 agent seconds.
+The rollout-boundary stopping convention explains the small overshoot of 2M.
+PPO recorded 150,153/171,181 transitions near Left/Right modes, including
+9,254/10,658 in the feasible fixture neighborhoods. Sampling starvation was
+substantially reduced. These are repeated transition counts, not independent
+episodes. Uniform validation still visited neither narrow canonical neighborhood.
+
+| Checkpoint | Feasible Left | Feasible Right | Blocked Left | Blocked Right |
+|---|---:|---:|---:|---:|
+| 1,015,808 transitions | 0/10 | 7/10 | 0/10 | 0/10 |
+| 2,031,616 transitions | 36/100 | 95/100 | 0/100 | 0/100 |
+
+Physical diagnostics execute the actual macros and retain the loaded constraint.
+All 400 final grasps/stages succeed. Seeds are 67000 for the small intermediate
+check and 68000 for the final check; differing sample sizes and seeds limit a
+precise learning-curve comparison. Final mean returns are Left feasible 46.91,
+Right feasible 149.60, Left blocked 11.96, Right blocked 15.35. The inherited
+joint precondition accepts 100/100 feasible Right, 0/100 feasible Left, and 0/100
+blocked states. Mean values are respectively 102.54, 17.76, 12.85, 15.78.
+Actual-handoff critic/discounted-return correlation is 0.884, joint precision
+95.0%, recall 72.5%. This does not pass the two-sided competence gate.
+
+Evaluation commands (paths below are relative to the final-experiment root):
+
+```bash
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/calibrate_connector_handoff.py \
+ --trials-per-grasp 200 --seed 68000 --attach-before-close \
+ --stage-frame connector --stage-height .01 --stage-hold-steps 192 \
+ --insert-controller policy \
+ --checkpoint results/custom_connector/final_handoff_experiment/training/empirical_init_2m/checkpoints/final.pth \
+ --output results/custom_connector/final_handoff_experiment/training/evaluations/empirical_2m_handoff
+```
+
+The intermediate command substitutes 20 trials per grasp, seed 67000,
+`transitions_001015808.pth`, and output `empirical_1m_handoff`. For each sampling
+mode `flow` and `uniform`, execute:
+
+```bash
+GOFLOW_HANDOFF_SPEC=experiments/connector_handoff/aligned_initialization_supported.json \
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/eval_original_goflow.py \
+ --task connector_aligned \
+ --checkpoint results/custom_connector/final_handoff_experiment/training/empirical_init_2m/checkpoints/final.pth \
+ --agent_config experiments/original_gears/privileged_goflow.yaml \
+ --sampling "$sampling" --episodes 100 --seed-base 69000 \
+ --output "results/custom_connector/final_handoff_experiment/training/empirical_init_2m/evaluations/2000000_$sampling"
+```
+
+No further PPO budget was launched in this approved stage. Existing results and
+original custom checkpoint remain intact. Gate B still fails; perception/planner
+scientific trials remain unexecuted. This is evidence of a remaining low-level
+learning problem, not evidence for the hypothesized planning gap.
+
+### Held-out evaluation and flow-objective limitation
+
+Held-out contexts (100 each, seeds 69000–69099) score 46% from the fitted/updated
+flow and 7% from uniform. Flow mean return is 65.04; critic/discounted-return
+correlation 0.798, success AUC 0.880, RMSE 26.90. Log-density/return correlation
+is -0.144. The inherited five-percentile diagnostic calibration gives epsilon
+0.00463348; 32/100 flow states are accepted, with 93.75% precision and 65.22%
+recall. The fixed handoff epsilon remains 0.0002145213. Both epsilon values yield
+the same four-cell handoff decisions, so the Left rejection is caused by its
+value prediction, not a borderline density threshold.
+
+The fitted density covers physical handoffs, but cannot yet be called a learned
+success region. All five online flow-update logs print near-zero reward and
+entropy terms. `scripts/audit_flow_objective_scale.py` measures the released
+formula offline on 100 held-out uniform episodes and 10,000 Monte Carlo samples:
+
+| Term | Loss | Gradient L2 norm |
+|---|---:|---:|
+| Reward | 4.06e-11 | 5.89e-9 |
+| Entropy | -2.76e-9 | 2.02e-8 |
+| Similarity at identical weights | 0 | 0.5156 |
+
+The similarity estimate has zero scalar loss at identical weights, but its
+finite-sample gradient need not be zero. This is a diagnostic batch, not a
+reconstruction of an online update or a causal intervention. Physical context
+volume is 3.6333e-5; normalized box volume is 10,000. Released `NormFlowDist`
+returns normalized-space log density without the affine Jacobian, while
+`GOFLOW.update` multiplies reward/entropy terms by physical volume and leaves
+similarity unscaled. Those released lines remain unchanged. The omitted affine
+log-Jacobian is 19.4331 for this domain. Final versus fitted-initial log-density
+correlation is 0.9823, mean absolute change 0.1611 on final-flow samples.
+
+This evidence warrants checking the loss scaling against the paper before
+another training stage. A correction would require an explicitly documented
+algorithm/fidelity decision; the present approval covered empirical initialization
+and 2M online transitions only. No such correction was applied. Left policy
+success improved, so this is not a claim that further PPO cannot help. Its 36%
+success and complete precondition rejection still prevent the final experiment.
+
+Reproduce the audits from the project root:
+
+```bash
+run=results/custom_connector/final_handoff_experiment/training/empirical_init_2m
+scripts/project_python.sh scripts/audit_handoff_exposure.py "$run"
+scripts/project_python.sh scripts/audit_flow_objective_scale.py "$run" \
+ --initial-checkpoint results/custom_connector/final_handoff_experiment/proposal/empirical_flow_start.pth
+scripts/project_python.sh scripts/analyze_connector_policy.py "$run" --milestone 2000000
+scripts/project_python.sh scripts/analyze_handoff_checkpoint.py \
+ --checkpoint "$run/checkpoints/final.pth" \
+ --handoffs results/custom_connector/final_handoff_experiment/training/evaluations/empirical_2m_handoff \
+ --output results/custom_connector/final_handoff_experiment/precondition_analysis/empirical_2m
+scripts/project_python.sh scripts/verify_connector_run.py "$run" --budget 2000000
+scripts/project_python.sh -m unittest discover -s tests -v
+```
+
+Verification passes finite weights, input separation (105 actor / 109 critic),
+transition accounting and all 200 held-out episodes / 9,400 steps. Final checkpoint
+SHA256: `4dc674c33475505240d71d0f87c5543ace31205c7dc5823a90c87a73e12d6f3b`.
+The original custom checkpoint's SHA remains unchanged. No native-import launch
+failures occurred in this approved stage. Prior stages' debug artifacts remain.

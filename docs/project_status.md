@@ -12,22 +12,34 @@ constraint-timing correction and neutral staging were then validated on 200
 executions per grasp. All 400 grasps/stages pass; oracle insertion succeeds
 99/100 and 100/100 in feasible Left/Right cases and 0/100 in blocked pairings.
 
-Two bounded aligned training attempts used 5,046,272 additional transitions in
-all. The latest policy scores 6/100 feasible Left, 67/100 feasible Right and
-0/100 blocked. Its learned flow/uniform evaluations score 43/100 and 12/100.
-The joint precondition rejects all 400 actual handoffs. The training audit finds
-no PPO exposure in the specified canonical feasible context neighborhoods.
-Gate B therefore fails. No camera-belief or scientific planner trials have run.
-The conclusion remains **INCONCLUSIVE**, with no evidence for or against a
-prospective-inspection limitation of GoFlow.
+Three bounded aligned attempts now total 7,077,888 additional transitions.
+The user-approved empirical initialization stage used 1,000 context-only flow
+fit steps and 2,031,616 online transitions (1,048,576 PPO; 983,040 validation;
+five flow updates). Final actual-handoff success is **36/100 feasible Left,
+95/100 feasible Right, and 0/100 for both blocked pairings**. All 400 grasps and
+stages pass. The joint precondition accepts all feasible Right states, rejects
+both blocked cells, and rejects all feasible Left states. Gate B still fails.
+No camera-belief or scientific planner trials have run; the result remains
+**INCONCLUSIVE** about the proposed planning gap.
 
-All earlier results remain intact. New results/report:
-`results/custom_connector/final_handoff_experiment/`. Configuration, commands,
-limitations and the approved empirical-flow initialization are
-in [the continuation record](../experiments/connector_handoff/final_experiment.md).
-The proposal adds a context-only likelihood initialization absent from the
-release. The user approved 1,000 initialization steps followed by a bounded
-2M-transition online stage; execution and acceptance checks are now in progress.
+The sampling remedy worked: PPO visited the specified feasible Left/Right
+neighborhoods for 9,254/10,658 transitions. Held-out success is 46/100 flow and
+7/100 uniform. The critic is useful (flow value/return correlation 0.798), but
+flow log-density/return correlation is -0.144. An offline released-objective
+probe found reward/entropy gradient norms near 1e-8 versus 0.516 for the sampled
+similarity term. This is a scaling concern, not a demonstrated cause of Left
+policy failure. The online objective remains unchanged. Do not claim the fitted
+density has become a learned success region merely because it covers both grasps.
+
+Latest diagnostic checkpoint:
+`results/custom_connector/final_handoff_experiment/training/empirical_init_2m/checkpoints/final.pth`
+SHA256 `4dc674c33475505240d71d0f87c5543ace31205c7dc5823a90c87a73e12d6f3b`.
+All earlier results remain intact. Detailed commands, results and limitations:
+[continuation record](../experiments/connector_handoff/final_experiment.md).
+The approved likelihood initialization is absent from the release; it is an
+explicit adaptation. The approved 2M stage is complete. Before another bounded
+continuation, resolve the measured flow-loss scaling concern without silently
+changing the released objective or applicability threshold.
 
 The remaining sections retain the original-task history and pre-training audits.
 

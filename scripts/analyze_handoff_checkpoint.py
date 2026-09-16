@@ -91,7 +91,8 @@ for row,sign in enumerate((-1,1)):
         lp=flow.log_prob(x).cpu().numpy().reshape(gx.shape)
     joint=(v>50)&(lp>np.log(epsilon))
     for ax,z,title in zip(axes[row,:3],(lp,v,joint),('Log density','Value','Joint indicator')):
-        im=ax.pcolormesh(gx*1000,ga,z,shading='auto');fig.colorbar(im,ax=ax)
+        limits={'vmin':0,'vmax':1} if title=='Joint indicator' else {}
+        im=ax.pcolormesh(gx*1000,ga,z,shading='auto',**limits);fig.colorbar(im,ax=ax)
         ax.scatter(contexts[mask,1]*1000,contexts[mask,3],s=5,c='red',alpha=.4)
         ax.set(xlabel='Grasp x (mm)',ylabel='Fixture angle',title=title)
     axes[row,3].scatter(contexts[mask,1]*1000,contexts[mask,3],c=success[mask],vmin=0,vmax=1,cmap='RdYlGn')
