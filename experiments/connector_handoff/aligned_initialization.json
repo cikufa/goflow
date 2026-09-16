@@ -1,0 +1,32 @@
+{
+  "bank": "results/custom_connector/final_handoff_experiment/calibration/aligned_oracle/insert_initial_states.npz",
+  "bank_sha256": "2b81368c144095ff2ffee6ad81e5ed38b4a326999b37ee7ded74f2147ae20787",
+  "samples": 400,
+  "dr_ranges": {
+    "yaw_offset": [
+      -0.009224326476396528,
+      9.68220221693628e-05
+    ],
+    "x_offset": [
+      -0.01325094997882843,
+      0.013166609406471252
+    ],
+    "y_offset": [
+      -0.0004948890686035156,
+      0.00016068582534790039
+    ],
+    "fixture_angle": [
+      -3.141592653589793,
+      3.141592653589793
+    ]
+  },
+  "scope": "Bounding box of empirical staged grasps with 5% padding (minimum 0.1 mrad yaw / 0.05 mm translation); continuous x includes interpolated grasps between the two actual modes.",
+  "nuisance": "Roll/pitch/z and robot state are sampled jointly from 16 nearest bank contexts; yaw/x/y take sampled physical context values; fixture follows unchanged angle geometry.",
+  "stage": {
+    "frame": "connector",
+    "height_m": 0.01,
+    "hold_steps": 192,
+    "preserve_orientation": true
+  },
+  "grasp_attach_timing": "Measured approach pose constrained before finger closure, explicit released rigid-grasp approximation"
+}

@@ -16,6 +16,7 @@ parser.add_argument('--episode-seconds', type=float, default=6., help='Oracle pr
 parser.add_argument('--fixture-distance-scale', type=float, default=1., help='Move the wall away as an explicit geometry control')
 parser.add_argument('--case', type=int, choices=range(6), help='Run one of the six fixed cases')
 parser.add_argument('--video', action='store_true')
+parser.add_argument('--aligned-init', action='store_true', help='Probe empirical handoff-derived INSERT resets')
 parser.add_argument('--closed-gripper', action='store_true', help='Use the INSERT initialization after macro closure')
 args = parser.parse_args()
 if args.episode_seconds <= 0 or args.fixture_distance_scale <= 0:
@@ -35,6 +36,10 @@ try:
     if args.closed_gripper:
         from experiments.connector_handoff.environment import ConnectorInsertEnvCfg
         cfg = ConnectorInsertEnvCfg()
+    if args.aligned_init:
+        from experiments.connector_handoff.aligned_environment import AlignedConnectorEnv, AlignedConnectorEnvCfg
+        ConnectorEnv = AlignedConnectorEnv
+        cfg = AlignedConnectorEnvCfg()
     cfg.scene.num_envs = 6 if args.case is None else 1
     cfg.episode_length_s = args.episode_seconds
     cfg.fixture_distance_scale = args.fixture_distance_scale
@@ -42,6 +47,13 @@ try:
     env = ConnectorEnv(cfg, render_mode='rgb_array' if args.video else None)
     contexts = torch.tensor([[0., grasp, 0., side * torch.pi / 2]
                               for side in (0, -1, 1) for grasp in (-GRASP_OFFSET, GRASP_OFFSET)], device=env.device)
+    if args.aligned_init:
+        from experiments.connector_handoff.aligned_environment import SPEC
+        bank = np.load(ROOT/SPEC['bank'])
+        for i in range(6):
+            side = -1 if i%2==0 else 1
+            mask = (bank['context'][:,1]*side>0)
+            contexts[i,:3] = torch.tensor(np.median(bank['context'][mask,:3],axis=0),device=env.device)
     if args.case is not None:
         contexts = contexts[args.case:args.case + 1]
     class FixedCases:
@@ -100,7 +112,7 @@ try:
                'seed': 0, 'steps': len(rows), 'episode_seconds': args.episode_seconds,
                'fixture_distance_scale': args.fixture_distance_scale,
                'case': args.case, 'video': args.video,
-               'closed_gripper': args.closed_gripper,
+               'closed_gripper': args.closed_gripper, 'aligned_init':args.aligned_init,
                'actor_width': 105, 'critic_width': 109,
                'contexts': contexts.tolist(),
                'returns': arrays['reward'].sum(0).tolist(),

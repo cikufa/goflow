@@ -68,6 +68,8 @@ import goflow.environments.med_gear.direct_panda_position
 import goflow.environments
 if args_cli.task == 'Connector-GOFLOW-v0':
     import experiments.connector_handoff.environment
+elif args_cli.task == 'ConnectorAligned-GOFLOW-v0':
+    import experiments.connector_handoff.aligned_environment
 
 import pathlib
 import logging

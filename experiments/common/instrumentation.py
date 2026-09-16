@@ -87,6 +87,9 @@ class InstrumentedA2CAgent(A2CAgent):
         state['goflow_distribution'] = self.dr_method.current_dist.flow.state_dict()
         state['goflow_distribution_optimizer'] = self.dr_method.dist_optimizer.state_dict()
         state['instrumentation'] = self.counts()
+        if hasattr(self.vec_env.env.unwrapped, '_handoff_bank'):
+            from experiments.connector_handoff.aligned_environment import SPEC
+            state['handoff_alignment'] = SPEC
         if self.has_central_value:
             state['central_value_optimizer'] = self.central_value_net.optimizer.state_dict()
             state['central_value_counters'] = {
