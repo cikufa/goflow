@@ -112,6 +112,7 @@ try:
                              fingers=robot.data.joint_pos[:, fingers].cpu().numpy(),
                              relative_pose=relative.to_vec().cpu().numpy(), attached=attached.cpu().numpy().copy(),
                              joint_positions=robot.data.joint_pos.cpu().numpy().copy(),
+                             joint_targets=robot.data.joint_pos_target.cpu().numpy().copy(),
                              joint_velocities=robot.data.joint_vel.cpu().numpy().copy(),
                              object_velocity=env.scene['peg'].data.root_state_w[:, 7:13].cpu().numpy().copy()))
 
@@ -245,6 +246,7 @@ try:
         np.savez_compressed(args.output/'insert_initial_states.npz',
             robot_joint_pos=robot.data.joint_pos.cpu().numpy(),
             robot_joint_vel=robot.data.joint_vel.cpu().numpy(),
+            robot_joint_targets=robot.data.joint_pos_target.cpu().numpy(), constraint_pose=effect,
             peg_root_state=env.scene['peg'].data.root_state_w.cpu().numpy(),
             hand_pose=torch.cat((hand_pos,hand_quat),1).cpu().numpy(),
             relative_pose=relative, context=initial_context.cpu().numpy(),

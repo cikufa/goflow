@@ -95,3 +95,32 @@ experiment, not an uninterrupted continuation under identical initialization.
 Gate B requires approximately 70%+ feasible policy success and <10% blocked
 success, plus meaningful learned preconditions. Gate C requires real rendered
 observations and validated pose/fixture beliefs. Scientific trials remain gated.
+
+### Reset replay correction
+
+A narrow replay exposed a consequential distinction: measured held pose differs
+from the authored joint rest transform under finger contact. Using the measured
+pose as the new rest transform doubled the deflection and made feasible Left
+fail. The first training process was stopped during simulator startup, before
+PPO. `calibration/aligned_complete_state` now also records joint rest transforms
+and actuator targets. Aligned reset preserves both, applying only the sampled
+context delta. The reset probe now reaches 0.107 mm and 0.050 mm in feasible
+Left/Right cases, returns 53.46/96.03, while blocked cases remain >22 mm away.
+Its purpose is alignment validation, not a second handoff success estimate.
+
+```bash
+GOFLOW_CPU_THREADS=16 scripts/project_python.sh -u scripts/probe_connector_geometry.py \
+  --aligned-init --episode-seconds 2 \
+  --output results/custom_connector/final_handoff_experiment/calibration/reset_complete_state
+scripts/project_python.sh scripts/prepare_connector_warm_start.py \
+  --source results/custom_connector/insert_seed0_to10m/checkpoints/final.pth \
+  --output results/custom_connector/final_handoff_experiment/training/warm_start.pth
+GOFLOW_CPU_THREADS=16 \
+GOFLOW_RUN_DIR=results/custom_connector/final_handoff_experiment/training/aligned_2m \
+GOFLOW_TRANSITION_BUDGET=2000000 GOFLOW_SAVE_EVERY=1000000 \
+scripts/project_python.sh -u scripts/run_goflow.py --headless \
+  --task ConnectorAligned-GOFLOW-v0 \
+  --agent_config experiments/original_gears/privileged_goflow.yaml \
+  --num_envs 1024 --seed 0 --exp_name connector_handoff_aligned_2m \
+  --checkpoint results/custom_connector/final_handoff_experiment/training/warm_start.pth
+```

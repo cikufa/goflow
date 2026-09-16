@@ -14,7 +14,7 @@ from experiments.common.runtime import kit_arguments
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint', required=True, type=Path)
-parser.add_argument('--task', choices=('gears', 'connector'), default='gears')
+parser.add_argument('--task', choices=('gears', 'connector', 'connector_aligned'), default='gears')
 parser.add_argument('--grasp-fixture-cases', action='store_true',
                     help='Connector-only paired fixed grasp/fixture contexts; diagnostic, not executed handoffs')
 parser.add_argument('--fixed-context', type=float, nargs='+',
@@ -37,7 +37,7 @@ if args.episodes < 1:
     parser.error('--episodes must be positive')
 if args.sampling_flow_checkpoint and args.sampling != 'flow':
     parser.error('--sampling-flow-checkpoint requires --sampling flow')
-if args.grasp_fixture_cases and (args.task != 'connector' or args.sampling != 'nominal'):
+if args.grasp_fixture_cases and (args.task not in ('connector','connector_aligned') or args.sampling != 'nominal'):
     parser.error('--grasp-fixture-cases requires --task connector --sampling nominal')
 if args.fixed_context is not None and (args.sampling != 'nominal' or args.grasp_fixture_cases):
     parser.error('--fixed-context requires nominal sampling and cannot be combined with paired cases')
@@ -67,10 +67,14 @@ try:
             return reward
 
     cfg = MyPandaEnvCfg()
-    if args.task == 'connector':
+    if args.task in ('connector', 'connector_aligned'):
         from experiments.connector_handoff.environment import ConnectorEnv, ConnectorInsertEnvCfg
         cfg = ConnectorInsertEnvCfg()
         EvaluationGears = ConnectorEnv
+        if args.task == 'connector_aligned':
+            from experiments.connector_handoff.aligned_environment import AlignedConnectorEnv, AlignedConnectorEnvCfg
+            cfg = AlignedConnectorEnvCfg()
+            EvaluationGears = AlignedConnectorEnv
     cfg.scene.num_envs = 1
     cfg.seed = args.seed_base
     view_target = IPose.from_pose(INITIAL_CFG.WORLD_T_HOLE_START).multiply(
@@ -121,6 +125,12 @@ try:
             case = episode % 4
             fixed_context = torch.tensor([[0., (-1 if case % 2 == 0 else 1)*GRASP_OFFSET,
                                            0., (-1 if case < 2 else 1)*torch.pi/2]], device=env.device)
+            if args.task == 'connector_aligned':
+                from experiments.connector_handoff.aligned_environment import SPEC
+                with np.load(ROOT/SPEC['bank']) as bank:
+                    sign = -1 if case%2==0 else 1
+                    samples = bank['context'][bank['context'][:,1]*sign>0]
+                    fixed_context[0,:3] = torch.tensor(np.median(samples[:,:3],axis=0),device=env.device)
             class FixedContext:
                 def rsample(self, shape):
                     return fixed_context.expand(shape[0], -1).clone()
@@ -202,7 +212,7 @@ try:
                'success_definition': f'upstream return >= {threshold}; not a physical seating certificate',
                'seeds': [r['seed'] for r in rows], 'checkpoint': str(args.checkpoint.resolve()),
                'training': checkpoint.get('instrumentation'), 'checkpoint_origin': 'locally trained from released code',
-               'privileged_critic': privileged, 'yaw_randomization_applied': args.task == 'connector',
+               'privileged_critic': privileged, 'yaw_randomization_applied': args.task in ('connector','connector_aligned'),
                'sampling': args.sampling,
                'sampling_flow_checkpoint': rows[0]['sampling_flow_checkpoint'],
                'control': args.control,

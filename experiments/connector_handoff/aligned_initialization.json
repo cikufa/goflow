@@ -1,6 +1,6 @@
 {
-  "bank": "results/custom_connector/final_handoff_experiment/calibration/aligned_oracle/insert_initial_states.npz",
-  "bank_sha256": "2b81368c144095ff2ffee6ad81e5ed38b4a326999b37ee7ded74f2147ae20787",
+  "bank": "results/custom_connector/final_handoff_experiment/calibration/aligned_complete_state/insert_initial_states.npz",
+  "bank_sha256": "d1d5aea15aa86b54189c80942fe331961fb966209d64ef40d0fcf02bd1ac48b8",
   "samples": 400,
   "dr_ranges": {
     "yaw_offset": [
@@ -21,7 +21,7 @@
     ]
   },
   "scope": "Bounding box of empirical staged grasps with 5% padding (minimum 0.1 mrad yaw / 0.05 mm translation); continuous x includes interpolated grasps between the two actual modes.",
-  "nuisance": "Roll/pitch/z and robot state are sampled jointly from 16 nearest bank contexts; yaw/x/y take sampled physical context values; fixture follows unchanged angle geometry.",
+  "nuisance": "Roll/pitch/z and robot state are sampled jointly from 16 nearest bank contexts; yaw/x/y take sampled physical context values; fixture follows unchanged angle geometry. Joint rest transforms and actuator targets are preserved separately from their contact-loaded measured states.",
   "stage": {
     "frame": "connector",
     "height_m": 0.01,

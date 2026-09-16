@@ -46,20 +46,36 @@ class AlignedConnectorEnv(ConnectorEnv):
         self.last_handoff_bank_indices = selected.clone()
         robot = self.robots[robot_name]
         robot.write_joint_state_to_sim(bank['robot_joint_pos'][selected], bank['robot_joint_vel'][selected], env_ids=ids)
-        robot.set_joint_position_target(bank['robot_joint_pos'][selected], env_ids=ids)
+        robot.set_joint_position_target(bank['robot_joint_targets'][selected], env_ids=ids)
         relative = bank['relative_pose'][selected].clone()
         roll, pitch, _ = euler_xyz_from_quat(relative[:, 3:7])
         relative[:, :2] = context[:, 1:3]
         relative[:, 3:7] = quat_from_euler_xyz(roll, pitch, context[:, 0])
+        measured = bank['relative_pose'][selected]
+        authored = bank['constraint_pose'][selected]
+        # Contact-loaded actual pose is not the joint's rest transform. Reusing
+        # the deflected actual pose as its rest pose would apply deflection twice.
+        constraint = IPose(relative[:, :3], relative[:, 3:7]).multiply(
+            IPose(measured[:, :3], measured[:, 3:7]).invert()).multiply(
+            IPose(authored[:, :3], authored[:, 3:7]))
         hand = bank['hand_pose'][selected]
         peg = IPose(hand[:, :3], hand[:, 3:7]).multiply(IPose(relative[:, :3], relative[:, 3:7]))
         rigid_object.write_root_pose_to_sim(torch.cat((peg.pos + self.scene.env_origins[ids], peg.quat), 1), env_ids=ids)
         rigid_object.write_root_velocity_to_sim(bank['peg_root_state'][selected, 7:13], env_ids=ids)
         for row, env_id in enumerate(ids.tolist()):
             joint = fixed_joints[env_id]
-            joint.GetLocalPos0Attr().Set(Gf.Vec3f(*relative[row, :3].tolist()))
-            joint.GetLocalRot0Attr().Set(Gf.Quatf(*relative[row, 3:7].tolist()))
+            joint.GetLocalPos0Attr().Set(Gf.Vec3f(*constraint.pos[row].tolist()))
+            joint.GetLocalRot0Attr().Set(Gf.Quatf(*constraint.quat[row].tolist()))
             joint.GetJointEnabledAttr().Set(True)
+
+    def step_sim(self):
+        # The released reset overwrites motor targets with current joint angles.
+        # Preserve the empirical targets supporting the loaded grasp instead.
+        if not hasattr(self, '_handoff_bank'):
+            return super().step_sim()
+        self.scene.write_data_to_sim()
+        self.sim.step(render=True)
+        self.scene.update(dt=self.physics_dt)
 
 
 gym.register(
