@@ -1,5 +1,10 @@
 # Connector grasp gate and INSERT training
 
+> Raw outputs from superseded geometry, grasp-smoke, and partial-training probes
+> were pruned on 2026-09-16. The historical commands and measured summaries below
+> remain for provenance; their old result paths are intentionally absent. Retained
+> artifacts are `insert_seed0_to10m/` and `final_handoff_experiment/`.
+
 The predecessor actions are visible-pose IK macros, as requested in the original
 specification. They are not separately trained grasp policies. The original
 Gears baseline is recorded at a4e09aa; the first custom geometry commit is 10f704b.
@@ -128,7 +133,7 @@ GOFLOW_TRANSITION_BUDGET=10000000 GOFLOW_SAVE_EVERY=2000000 \
 scripts/project_python.sh -u scripts/run_goflow.py --headless \
   --task Connector-GOFLOW-v0 --agent_config experiments/original_gears/privileged_goflow.yaml \
   --num_envs 1024 --seed 0 --exp_name connector_insert_seed0_to10m \
-  --checkpoint results/custom_connector/insert_seed0/checkpoints/final.pth
+  --checkpoint results/custom_connector/insert_seed0_to10m/checkpoints/final.pth
 ```
 
 The resume path restores actor/critic/flow and optimizer state and counters.

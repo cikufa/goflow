@@ -1,5 +1,9 @@
 # Connector diagnostic: implementation contract
 
+> The raw geometry-probe outputs referenced by earlier exploratory commands were
+> pruned on 2026-09-16. Their commands and conclusions remain as historical
+> provenance; the active artifacts are under `final_handoff_experiment/`.
+
 Current continuation: [grasp validation and INSERT training](training.md). The
 geometry results below describe the original open-gripper prototype. Closed
 fingers required a longer exposed connector tip; the updated geometry and macro

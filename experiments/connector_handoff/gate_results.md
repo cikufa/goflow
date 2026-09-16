@@ -1,5 +1,9 @@
 # Connector handoff experiment: acceptance-gate report
 
+> Raw outputs for superseded failed stages (`aligned_2m`, `supported_3m`, and
+> their debug probes) were pruned on 2026-09-16. This report retains their
+> summaries for provenance. The current empirical-stage artifacts remain.
+
 Final planner trials: **0**. This report records executed diagnostics and explicitly marks unexecuted stages.
 
 ## 1. Scientific question
@@ -12,7 +16,7 @@ Released PPO, GoFlow objective/architecture, 105-input actor, 109-input privileg
 
 ## 3. Existing implementation inherited
 
-The original 10,027,008-transition connector checkpoint and both earlier result directories are preserved. Original checkpoint SHA256: d2e75560f58ac9b4836193e3d437e0817fbcbb7d4eb652680abe40d3be8770e5. It achieved 33/100 flow and 2/100 uniform successes before this work.
+The original 10,027,008-transition connector checkpoint is retained in `insert_seed0_to10m/`; the superseded partial run was pruned. Original checkpoint SHA256: d2e75560f58ac9b4836193e3d437e0817fbcbb7d4eb652680abe40d3be8770e5. It achieved 33/100 flow and 2/100 uniform successes before this work.
 
 ## 4. Actual grasp terminal distributions
 

@@ -34,7 +34,9 @@ density has become a learned success region merely because it covers both grasps
 Latest diagnostic checkpoint:
 `results/custom_connector/final_handoff_experiment/training/empirical_init_2m/checkpoints/final.pth`
 SHA256 `4dc674c33475505240d71d0f87c5543ace31205c7dc5823a90c87a73e12d6f3b`.
-All earlier results remain intact. Detailed commands, results and limitations:
+The retained baseline and current empirical-stage results remain intact; raw
+outputs from superseded probes and failed stages were pruned. Detailed commands,
+results and limitations:
 [continuation record](../experiments/connector_handoff/final_experiment.md).
 The approved likelihood initialization is absent from the release; it is an
 explicit adaptation. The approved 2M stage is complete. Before another bounded

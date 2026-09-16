@@ -1,7 +1,8 @@
 # Final handoff experiment: acceptance gates
 
 Result root: `results/custom_connector/final_handoff_experiment/`. The earlier
-5M and 10M INSERT runs are preserved. No planner outcome is inferred until
+The final original 10M INSERT baseline is retained; the superseded partial 5M
+raw run was pruned. No planner outcome is inferred until
 physical handoff, learned competence/precondition, and real perception all pass.
 No successor-aware grasp predicate or inspect-before-grasp rule is permitted.
 
