@@ -1,0 +1,15 @@
+{
+  "status": "PROPOSED_NOT_EXECUTED_REQUIRES_APPROVAL",
+  "reason": "Neither the tight nor the data-scaled released flow initialization visited either canonical feasible handoff region during PPO. A context-only initialization fit changes the released training protocol and is not silently adopted.",
+  "alignment_spec": "experiments/connector_handoff/aligned_initialization_supported.json",
+  "actor_critic_source": "results/custom_connector/final_handoff_experiment/training/warm_start.pth",
+  "output": "results/custom_connector/final_handoff_experiment/proposal/empirical_flow_start.pth",
+  "target": "Balanced empirical GraspLeft/GraspRight yaw/x/y; independent uniform fixture angle over the unchanged physical domain. No returns, success labels or successor-compatible pairing labels are used.",
+  "jitter_sd_yaw_x_y": [0.001, 0.0005, 0.0001],
+  "fit_steps": 1000,
+  "batch_size": 512,
+  "learning_rate": 0.001,
+  "seed": 0,
+  "subsequent_ppo_transition_cap": 2000000,
+  "algorithm_difference": "An additional maximum-likelihood fit initializes the existing flow before otherwise unchanged online PPO/GoFlow updates. No new architecture, planning rule, reward, threshold or actor input is introduced. This is an adaptation, not the exact released training initialization."
+}
